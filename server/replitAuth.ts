@@ -116,14 +116,27 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const strategyName = `replitauth:${req.hostname}`;
+    console.log("=== LOGIN REQUEST ===");
+    console.log("Hostname:", req.hostname);
+    console.log("Strategy:", strategyName);
+    console.log("Available domains:", Array.from(allDomains));
+    
+    passport.authenticate(strategyName, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    const strategyName = `replitauth:${req.hostname}`;
+    console.log("=== CALLBACK REQUEST ===");
+    console.log("Hostname:", req.hostname);
+    console.log("Strategy:", strategyName);
+    console.log("Query params:", req.query);
+    console.log("Available domains:", Array.from(allDomains));
+    
+    passport.authenticate(strategyName, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
