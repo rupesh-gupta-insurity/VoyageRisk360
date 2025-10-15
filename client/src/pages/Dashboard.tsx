@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import MapView from '@/components/MapView';
 import RiskScoreCard from '@/components/RiskScoreCard';
 import LayerControl from '@/components/LayerControl';
@@ -8,74 +10,176 @@ import DrawingTools from '@/components/DrawingTools';
 import RiskLegend from '@/components/RiskLegend';
 import SaveRouteDialog from '@/components/SaveRouteDialog';
 import ThemeToggle from '@/components/ThemeToggle';
-import { Ship } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Ship, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { isUnauthorizedError } from '@/lib/authUtils';
 import jsPDF from 'jspdf';
 import Papa from 'papaparse';
 
-//todo: remove mock functionality
 interface Route {
   id: string;
   name: string;
-  waypoints: Array<{ lat: number; lng: number }>;
   riskScore: number;
-  weather: number;
-  piracy: number;
-  traffic: number;
-  claims: number;
+  weatherRisk: number;
+  piracyRisk: number;
+  trafficRisk: number;
+  claimsRisk: number;
   createdAt: string;
+  waypoints: Array<{ 
+    latitude: string;
+    longitude: string;
+    sequence: number;
+  }>;
 }
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const [routes, setRoutes] = useState<Route[]>([
-    {
-      id: '1',
-      name: 'Singapore to Rotterdam',
-      waypoints: [
-        { lat: 1.3521, lng: 103.8198 },
-        { lat: 15.0, lng: 65.0 },
-        { lat: 25.0, lng: 55.0 },
-        { lat: 51.9244, lng: 4.4777 },
-      ],
-      riskScore: 65,
-      weather: 45,
-      piracy: 75,
-      traffic: 60,
-      claims: 55,
-      createdAt: '2024-10-15',
-    },
-    {
-      id: '2',
-      name: 'Shanghai to Los Angeles',
-      waypoints: [
-        { lat: 31.2304, lng: 121.4737 },
-        { lat: 35.0, lng: 160.0 },
-        { lat: 34.0522, lng: -118.2437 },
-      ],
-      riskScore: 42,
-      weather: 35,
-      piracy: 25,
-      traffic: 55,
-      claims: 35,
-      createdAt: '2024-10-14',
-    },
-  ]);
-
-  const [selectedRoute, setSelectedRoute] = useState<string | null>('1');
+  const { user, isLoading: authLoading } = useAuth();
+  
+  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
   const [layers, setLayers] = useState({
     weather: true,
     piracy: false,
     traffic: false,
     claims: false,
   });
-  const [alertConfig, setAlertConfig] = useState({
-    threshold: 75,
-    enabled: true,
-  });
   const [isDrawing, setIsDrawing] = useState(false);
   const [tempWaypoints, setTempWaypoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      toast({
+        title: "Unauthorized",
+        description: "You are logged out. Logging in again...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+    }
+  }, [user, authLoading, toast]);
+
+  const { data: routes = [], isLoading: routesLoading } = useQuery<Route[]>({
+    queryKey: ['/api/routes'],
+    enabled: !!user,
+  });
+
+  const { data: alertConfig } = useQuery<{ enabled: boolean; threshold: number }>({
+    queryKey: ['/api/alert-config'],
+    enabled: !!user,
+  });
+
+  const createRouteMutation = useMutation({
+    mutationFn: async (data: { name: string; waypoints: Array<{ latitude: number; longitude: number }> }) => {
+      const res = await apiRequest('POST', '/api/routes', data);
+      return await res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/routes'] });
+      setSelectedRoute(data.route.id);
+      setTempWaypoints([]);
+      setShowSaveDialog(false);
+
+      if (alertConfig?.enabled && data.route.riskScore > alertConfig.threshold) {
+        toast({
+          title: 'High Risk Alert!',
+          description: `Route exceeds risk threshold (${data.route.riskScore}%)`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Route Saved',
+          description: 'Route has been saved successfully',
+        });
+      }
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: 'Error',
+        description: 'Failed to save route',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteRouteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest('DELETE', `/api/routes/${id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/routes'] });
+      toast({
+        title: 'Route Deleted',
+        description: 'Route has been removed',
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: 'Error',
+        description: 'Failed to delete route',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateAlertConfigMutation = useMutation({
+    mutationFn: async (config: { enabled: boolean; threshold: number }) => {
+      const res = await apiRequest('POST', '/api/alert-config', config);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/alert-config'] });
+      toast({
+        title: 'Alert Configuration Saved',
+        description: 'Your alert settings have been updated',
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: 'Error',
+        description: 'Failed to save alert configuration',
+        variant: 'destructive',
+      });
+    },
+  });
 
   const currentRoute = routes.find((r) => r.id === selectedRoute);
 
@@ -91,47 +195,17 @@ export default function Dashboard() {
   };
 
   const handleSaveRoute = (name: string) => {
-    //todo: remove mock functionality - calculate real risk scores
-    const newRoute: Route = {
-      id: Date.now().toString(),
+    createRouteMutation.mutate({
       name,
-      waypoints: tempWaypoints,
-      riskScore: Math.floor(Math.random() * 100),
-      weather: Math.floor(Math.random() * 100),
-      piracy: Math.floor(Math.random() * 100),
-      traffic: Math.floor(Math.random() * 100),
-      claims: Math.floor(Math.random() * 100),
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-
-    setRoutes((prev) => [...prev, newRoute]);
-    setSelectedRoute(newRoute.id);
-    setTempWaypoints([]);
-    setShowSaveDialog(false);
-
-    if (alertConfig.enabled && newRoute.riskScore > alertConfig.threshold) {
-      toast({
-        title: 'High Risk Alert!',
-        description: `Route "${name}" exceeds risk threshold (${newRoute.riskScore}%)`,
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Route Saved',
-        description: `"${name}" has been saved successfully`,
-      });
-    }
+      waypoints: tempWaypoints.map(wp => ({ latitude: wp.lat, longitude: wp.lng })),
+    });
   };
 
   const handleDeleteRoute = (id: string) => {
-    setRoutes((prev) => prev.filter((r) => r.id !== id));
     if (selectedRoute === id) {
       setSelectedRoute(routes.length > 1 ? routes[0].id : null);
     }
-    toast({
-      title: 'Route Deleted',
-      description: 'Route has been removed',
-    });
+    deleteRouteMutation.mutate(id);
   };
 
   const handleExportPDF = (id: string) => {
@@ -144,11 +218,11 @@ export default function Dashboard() {
     doc.setFontSize(12);
     doc.text(`Route: ${route.name}`, 20, 40);
     doc.text(`Overall Risk Score: ${route.riskScore}%`, 20, 50);
-    doc.text(`Weather Risk: ${route.weather}%`, 20, 60);
-    doc.text(`Piracy Risk: ${route.piracy}%`, 20, 70);
-    doc.text(`Traffic Risk: ${route.traffic}%`, 20, 80);
-    doc.text(`Claims Risk: ${route.claims}%`, 20, 90);
-    doc.text(`Date: ${route.createdAt}`, 20, 100);
+    doc.text(`Weather Risk: ${route.weatherRisk}%`, 20, 60);
+    doc.text(`Piracy Risk: ${route.piracyRisk}%`, 20, 70);
+    doc.text(`Traffic Risk: ${route.trafficRisk}%`, 20, 80);
+    doc.text(`Claims Risk: ${route.claimsRisk}%`, 20, 90);
+    doc.text(`Date: ${new Date(route.createdAt).toLocaleDateString()}`, 20, 100);
     
     doc.save(`${route.name.replace(/\s/g, '_')}_risk_report.pdf`);
     
@@ -158,32 +232,22 @@ export default function Dashboard() {
     });
   };
 
-  const handleExportCSV = (id: string) => {
-    const route = routes.find((r) => r.id === id);
-    if (!route) return;
+  const formattedRoutes = routes.map(route => ({
+    ...route,
+    waypoints: route.waypoints.map(wp => ({
+      lat: parseFloat(wp.latitude),
+      lng: parseFloat(wp.longitude),
+    })),
+    createdAt: new Date(route.createdAt).toLocaleDateString(),
+  }));
 
-    const data = [
-      { Category: 'Overall', Score: route.riskScore },
-      { Category: 'Weather', Score: route.weather },
-      { Category: 'Piracy', Score: route.piracy },
-      { Category: 'Traffic', Score: route.traffic },
-      { Category: 'Claims', Score: route.claims },
-    ];
-
-    const csv = Papa.unparse(data);
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${route.name.replace(/\s/g, '_')}_risk_data.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: 'CSV Exported',
-      description: 'Risk data has been downloaded',
-    });
-  };
+  if (authLoading || !user) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen flex-col">
@@ -192,13 +256,21 @@ export default function Dashboard() {
           <Ship className="h-6 w-6 text-primary" />
           <h1 className="text-xl font-bold">VoyageRisk360</h1>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button variant="ghost" size="sm" asChild data-testid="button-logout">
+            <a href="/api/logout">
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </a>
+          </Button>
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-80 border-r p-4 space-y-4 overflow-y-auto">
           <RouteList
-            routes={routes}
+            routes={formattedRoutes}
             selectedRoute={selectedRoute}
             onSelectRoute={setSelectedRoute}
             onDeleteRoute={handleDeleteRoute}
@@ -208,36 +280,39 @@ export default function Dashboard() {
           {currentRoute && (
             <RiskScoreCard
               overall={currentRoute.riskScore}
-              weather={currentRoute.weather}
-              piracy={currentRoute.piracy}
-              traffic={currentRoute.traffic}
-              claims={currentRoute.claims}
+              weather={currentRoute.weatherRisk}
+              piracy={currentRoute.piracyRisk}
+              traffic={currentRoute.trafficRisk}
+              claims={currentRoute.claimsRisk}
             />
           )}
 
           <LayerControl layers={layers} onLayerToggle={handleLayerToggle} />
 
           <AlertConfig
-            threshold={alertConfig.threshold}
-            enabled={alertConfig.enabled}
-            onThresholdChange={(threshold) =>
-              setAlertConfig((prev) => ({ ...prev, threshold }))
-            }
-            onEnabledChange={(enabled) =>
-              setAlertConfig((prev) => ({ ...prev, enabled }))
-            }
-            onSave={() => {
-              toast({
-                title: 'Alert Configuration Saved',
-                description: `Alerts ${alertConfig.enabled ? 'enabled' : 'disabled'} at ${alertConfig.threshold}% threshold`,
+            threshold={alertConfig?.threshold ?? 75}
+            enabled={alertConfig?.enabled ?? true}
+            onThresholdChange={(threshold) => {
+              updateAlertConfigMutation.mutate({
+                enabled: alertConfig?.enabled ?? true,
+                threshold,
               });
+            }}
+            onEnabledChange={(enabled) => {
+              updateAlertConfigMutation.mutate({
+                enabled,
+                threshold: alertConfig?.threshold ?? 75,
+              });
+            }}
+            onSave={() => {
+              // Already handled in mutations
             }}
           />
         </aside>
 
         <main className="flex-1 relative">
           <MapView
-            routes={routes}
+            routes={formattedRoutes}
             selectedRoute={selectedRoute}
             onRouteSelect={setSelectedRoute}
             layers={layers}
