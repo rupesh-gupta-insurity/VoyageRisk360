@@ -26,8 +26,8 @@ export default function Landing() {
           </div>
 
           <div className="flex justify-center gap-4">
-            <Button size="lg" asChild data-testid="button-login">
-              <a href="/api/login">Get Started</a>
+            <Button size="lg" asChild data-testid="button-get-started">
+              <a href="/dashboard">Get Started</a>
             </Button>
           </div>
 
