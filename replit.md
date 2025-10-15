@@ -14,6 +14,11 @@ Preferred communication style: Simple, everyday language.
 
 ### October 15, 2025
 - **✅ MVP Complete**: All core features implemented and tested
+- **Authentication Domain Fix**:
+  - Fixed Replit Auth to handle both `.replit.dev` and `.repl.co` domain variations
+  - Passport strategies now automatically registered for both domain families
+  - Prevents authentication callback failures when accessing app via different domain variants
+  - Added whitespace trimming for defensive domain parsing
 - **Security Fixes Applied**:
   - Fixed critical cross-tenant route access vulnerability - all route operations now properly scoped by userId
   - Fixed route deletion to verify ownership BEFORE deleting (prevents unauthorized deletion)

@@ -85,7 +85,7 @@ export async function setupAuth(app: Express) {
   };
 
   // Register strategy for all possible domain variations
-  const domains = process.env.REPLIT_DOMAINS!.split(",");
+  const domains = process.env.REPLIT_DOMAINS!.split(",").map(d => d.trim());
   const allDomains = new Set<string>();
   
   // Add original domains and variations (.repl.co, .replit.dev)
@@ -123,8 +123,6 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    console.log("Callback received - hostname:", req.hostname);
-    console.log("Available strategies:", Array.from(allDomains).map(d => `replitauth:${d}`));
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
