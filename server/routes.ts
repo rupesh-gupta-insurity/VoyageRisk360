@@ -77,8 +77,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       await storage.deleteRoute(req.params.id, userId);
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting route:", error);
+      if (error.message?.includes('Unauthorized')) {
+        return res.status(403).json({ message: "Unauthorized to delete this route" });
+      }
+      if (error.message?.includes('not found')) {
+        return res.status(404).json({ message: "Route not found" });
+      }
       res.status(500).json({ message: "Failed to delete route" });
     }
   });

@@ -120,15 +120,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteRoute(routeId: string, userId: string): Promise<void> {
-    // Security: only delete if route belongs to user
-    const result = await db
-      .delete(routes)
-      .where(eq(routes.id, routeId))
-      .returning();
+    // Security: verify ownership BEFORE deleting
+    const [route] = await db
+      .select()
+      .from(routes)
+      .where(eq(routes.id, routeId));
     
-    if (result.length === 0 || result[0].userId !== userId) {
-      throw new Error("Route not found or unauthorized");
+    if (!route) {
+      throw new Error("Route not found");
     }
+    
+    if (route.userId !== userId) {
+      throw new Error("Unauthorized to delete this route");
+    }
+    
+    // Now safe to delete
+    await db.delete(routes).where(eq(routes.id, routeId));
   }
 
   // Alert configuration operations

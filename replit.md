@@ -10,6 +10,27 @@ The application features a map-first interface where users can draw routes, visu
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### October 15, 2025
+- **✅ MVP Complete**: All core features implemented and tested
+- **Security Fixes Applied**:
+  - Fixed critical cross-tenant route access vulnerability - all route operations now properly scoped by userId
+  - Fixed route deletion to verify ownership BEFORE deleting (prevents unauthorized deletion)
+  - Improved error responses: 403 for unauthorized, 404 for not found, 500 for server errors
+- **Schema Improvements**:
+  - Separated request schema (`createRouteRequestSchema`) from database schema (`insertRouteSchema`)
+  - Server now properly injects risk scores during route creation
+  - Fixed validation to accept client requests without pre-calculated risk scores
+- **Frontend Enhancements**:
+  - Added `useCallback` to route creation handler for stable dependency in MapView
+  - Improved error handling and user feedback with toast notifications
+  - All components have proper `data-testid` attributes for testing
+- **Testing**:
+  - End-to-end tests passing successfully
+  - Verified complete user workflow: login → draw route → save → delete → logout
+  - Route creation, risk scoring, alerts, and exports all functional
+
 ## System Architecture
 
 ### Frontend Architecture
