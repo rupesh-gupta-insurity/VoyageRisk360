@@ -84,8 +84,22 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  // Register strategy for all possible domain variations
+  const domains = process.env.REPLIT_DOMAINS!.split(",");
+  const allDomains = new Set<string>();
+  
+  // Add original domains and variations (.repl.co, .replit.dev)
+  for (const domain of domains) {
+    allDomains.add(domain);
+    if (domain.includes('.replit.dev')) {
+      allDomains.add(domain.replace('.replit.dev', '.repl.co'));
+    }
+    if (domain.includes('.repl.co')) {
+      allDomains.add(domain.replace('.repl.co', '.replit.dev'));
+    }
+  }
+  
+  for (const domain of Array.from(allDomains)) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
