@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import MapView from '@/components/MapView';
@@ -187,12 +187,18 @@ export default function Dashboard() {
     setLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
   };
 
-  const handleRouteCreate = (waypoints: Array<{ lat: number; lng: number }>) => {
+  const handleRouteCreate = useCallback((waypoints: Array<{ lat: number; lng: number }>) => {
     if (waypoints.length >= 2) {
       setTempWaypoints(waypoints);
       setShowSaveDialog(true);
+    } else {
+      toast({
+        title: 'Insufficient Waypoints',
+        description: 'Please add at least 2 waypoints to create a route',
+        variant: 'destructive',
+      });
     }
-  };
+  }, [toast]);
 
   const handleSaveRoute = (name: string) => {
     createRouteMutation.mutate({
