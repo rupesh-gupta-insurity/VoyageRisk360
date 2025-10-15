@@ -7,6 +7,7 @@ import AlertConfig from '@/components/AlertConfig';
 import DrawingTools from '@/components/DrawingTools';
 import RiskLegend from '@/components/RiskLegend';
 import SaveRouteDialog from '@/components/SaveRouteDialog';
+import OnboardingOverlay from '@/components/OnboardingOverlay';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Ship } from 'lucide-react';
@@ -26,16 +27,36 @@ export default function Dashboard() {
     claims: false,
   });
   const [isDrawing, setIsDrawing] = useState(false);
+  const [drawingPoints, setDrawingPoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [tempWaypoints, setTempWaypoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [previewRiskScores, setPreviewRiskScores] = useState<{
+    overall: number;
+    weather: number;
+    piracy: number;
+    traffic: number;
+    claims: number;
+  } | null>(null);
   const [alertConfig, setAlertConfig] = useState({ enabled: true, threshold: 75 });
   const [isSaving, setIsSaving] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Load routes and alert config from localStorage on mount
   useEffect(() => {
     setRoutes(getAllRoutes());
     setAlertConfig(getAlertConfig());
+    
+    // Check if user has seen onboarding
+    const hasSeenOnboarding = localStorage.getItem('voyagerisk360_onboarding_completed');
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
+    }
   }, []);
+
+  const handleDismissOnboarding = () => {
+    localStorage.setItem('voyagerisk360_onboarding_completed', 'true');
+    setShowOnboarding(false);
+  };
 
   const currentRoute = routes.find((r) => r.id === selectedRoute);
 
@@ -43,10 +64,42 @@ export default function Dashboard() {
     setLayers((prev) => ({ ...prev, [layer]: !prev[layer] }));
   };
 
-  const handleRouteCreate = useCallback((waypoints: Array<{ lat: number; lng: number }>) => {
+  const handleRouteCreate = useCallback(async (waypoints: Array<{ lat: number; lng: number }>) => {
     if (waypoints.length >= 2) {
       setTempWaypoints(waypoints);
       setShowSaveDialog(true);
+      setIsSaving(true);
+      
+      try {
+        // Calculate risk scores immediately
+        const response = await fetch('/api/calculate-risk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            waypoints: waypoints.map((wp, i) => ({
+              latitude: wp.lat,
+              longitude: wp.lng,
+              sequence: i,
+            })),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to calculate risk');
+        }
+
+        const riskScores = await response.json();
+        setPreviewRiskScores(riskScores);
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to calculate risk scores',
+          variant: 'destructive',
+        });
+        setShowSaveDialog(false);
+      } finally {
+        setIsSaving(false);
+      }
     } else {
       toast({
         title: 'Insufficient Waypoints',
@@ -57,27 +110,10 @@ export default function Dashboard() {
   }, [toast]);
 
   const handleSaveRoute = async (name: string) => {
+    if (!previewRiskScores) return;
+    
     setIsSaving(true);
     try {
-      // Calculate risk scores by calling the backend
-      const response = await fetch('/api/calculate-risk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          waypoints: tempWaypoints.map((wp, i) => ({
-            latitude: wp.lat,
-            longitude: wp.lng,
-            sequence: i,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to calculate risk');
-      }
-
-      const riskScores = await response.json();
-
       // Save route to localStorage with waypoints
       const newRoute = saveRoute({
         name,
@@ -88,23 +124,24 @@ export default function Dashboard() {
           longitude: wp.lng.toString(),
           sequence: i,
         })),
-        riskScore: riskScores.overall,
-        weatherRisk: riskScores.weather,
-        piracyRisk: riskScores.piracy,
-        trafficRisk: riskScores.traffic,
-        claimsRisk: riskScores.claims,
+        riskScore: previewRiskScores.overall,
+        weatherRisk: previewRiskScores.weather,
+        piracyRisk: previewRiskScores.piracy,
+        trafficRisk: previewRiskScores.traffic,
+        claimsRisk: previewRiskScores.claims,
       });
 
       setRoutes(getAllRoutes());
       setSelectedRoute(newRoute.id);
       setTempWaypoints([]);
+      setPreviewRiskScores(null);
       setShowSaveDialog(false);
 
       // Check if route exceeds alert threshold
-      if (alertConfig.enabled && riskScores.overall > alertConfig.threshold) {
+      if (alertConfig.enabled && previewRiskScores.overall > alertConfig.threshold) {
         toast({
           title: 'High Risk Alert!',
-          description: `Route exceeds risk threshold (${riskScores.overall}%)`,
+          description: `Route exceeds risk threshold (${previewRiskScores.overall}%)`,
           variant: 'destructive',
         });
       } else {
@@ -237,15 +274,18 @@ export default function Dashboard() {
             layers={layers}
             isDrawing={isDrawing}
             onRouteCreate={handleRouteCreate}
+            onDrawingUpdate={(count) => setDrawingPoints(Array(count).fill({ lat: 0, lng: 0 }))}
           />
 
           <div className="absolute top-4 left-4 z-[1000]">
             <DrawingTools
               isDrawing={isDrawing}
+              waypointCount={drawingPoints.length}
               onStartDrawing={() => setIsDrawing(true)}
               onFinishDrawing={() => setIsDrawing(false)}
               onCancelDrawing={() => {
                 setIsDrawing(false);
+                setDrawingPoints([]);
                 setTempWaypoints([]);
               }}
             />
@@ -259,9 +299,21 @@ export default function Dashboard() {
 
       <SaveRouteDialog
         open={showSaveDialog}
-        onOpenChange={setShowSaveDialog}
+        onOpenChange={(open) => {
+          setShowSaveDialog(open);
+          if (!open) {
+            setPreviewRiskScores(null);
+          }
+        }}
         onSave={handleSaveRoute}
+        waypoints={tempWaypoints}
+        riskScores={previewRiskScores}
+        isCalculating={isSaving && !previewRiskScores}
       />
+
+      {showOnboarding && (
+        <OnboardingOverlay onDismiss={handleDismissOnboarding} />
+      )}
     </div>
   );
 }

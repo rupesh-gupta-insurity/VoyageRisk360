@@ -19,6 +19,7 @@ interface MapViewProps {
   };
   isDrawing: boolean;
   onRouteCreate: (waypoints: Array<{ lat: number; lng: number }>) => void;
+  onDrawingUpdate?: (pointCount: number) => void;
 }
 
 export default function MapView({
@@ -28,9 +29,13 @@ export default function MapView({
   layers,
   isDrawing,
   onRouteCreate,
+  onDrawingUpdate,
 }: MapViewProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const routeLayersRef = useRef<L.LayerGroup | null>(null);
+  const riskLayersRef = useRef<L.LayerGroup | null>(null);
+  const drawingLayersRef = useRef<L.LayerGroup | null>(null);
   const [drawingPoints, setDrawingPoints] = useState<Array<{ lat: number; lng: number }>>([]);
 
   useEffect(() => {
@@ -42,23 +47,25 @@ export default function MapView({
       attribution: '© OpenStreetMap contributors',
     }).addTo(map);
 
+    routeLayersRef.current = L.layerGroup().addTo(map);
+    riskLayersRef.current = L.layerGroup().addTo(map);
+    drawingLayersRef.current = L.layerGroup().addTo(map);
+
     mapRef.current = map;
 
     return () => {
       map.remove();
       mapRef.current = null;
+      routeLayersRef.current = null;
+      riskLayersRef.current = null;
+      drawingLayersRef.current = null;
     };
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!routeLayersRef.current) return;
 
-    const map = mapRef.current;
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Polyline || layer instanceof L.Marker || layer instanceof L.Rectangle) {
-        map.removeLayer(layer);
-      }
-    });
+    routeLayersRef.current.clearLayers();
 
     routes.forEach((route) => {
       if (route.waypoints.length < 2) return;
@@ -68,11 +75,13 @@ export default function MapView({
         color,
         weight: route.id === selectedRoute ? 5 : 3,
         opacity: route.id === selectedRoute ? 1 : 0.7,
-      }).addTo(map);
+      });
 
       line.on('click', () => {
         onRouteSelect(route.id);
       });
+
+      routeLayersRef.current?.addLayer(line);
 
       route.waypoints.forEach((point, index) => {
         const marker = L.circleMarker(point, {
@@ -82,62 +91,98 @@ export default function MapView({
           weight: 2,
           opacity: 1,
           fillOpacity: 0.8,
-        }).addTo(map);
+        });
 
         marker.bindPopup(`Waypoint ${index + 1}`);
+        routeLayersRef.current?.addLayer(marker);
       });
     });
+  }, [routes, selectedRoute, onRouteSelect]);
+
+  useEffect(() => {
+    if (!riskLayersRef.current) return;
+
+    riskLayersRef.current.clearLayers();
 
     if (layers.weather) {
       const weatherZone = L.rectangle(
         [[10, 40], [30, 80]],
         { color: '#3b82f6', weight: 1, fillOpacity: 0.2 }
-      ).addTo(map);
+      );
       weatherZone.bindPopup('Storm Warning Zone');
+      riskLayersRef.current.addLayer(weatherZone);
     }
 
     if (layers.piracy) {
       const piracyZone = L.rectangle(
         [[0, 40], [15, 60]],
         { color: '#ef4444', weight: 1, fillOpacity: 0.2 }
-      ).addTo(map);
+      );
       piracyZone.bindPopup('Piracy Risk Zone');
+      riskLayersRef.current.addLayer(piracyZone);
     }
 
     if (layers.traffic) {
       const trafficZone = L.rectangle(
         [[25, 50], [40, 70]],
         { color: '#f59e0b', weight: 1, fillOpacity: 0.2 }
-      ).addTo(map);
+      );
       trafficZone.bindPopup('High Traffic Zone');
+      riskLayersRef.current.addLayer(trafficZone);
     }
 
     if (layers.claims) {
       const claimsZone = L.rectangle(
         [[5, 65], [20, 85]],
         { color: '#a855f7', weight: 1, fillOpacity: 0.2 }
-      ).addTo(map);
+      );
       claimsZone.bindPopup('Historical Claims Zone');
+      riskLayersRef.current.addLayer(claimsZone);
     }
-  }, [routes, selectedRoute, layers, onRouteSelect]);
+  }, [layers]);
 
   useEffect(() => {
-    if (!mapRef.current || !isDrawing) return;
+    if (!drawingLayersRef.current) return;
+
+    drawingLayersRef.current.clearLayers();
+
+    if (drawingPoints.length > 0) {
+      drawingPoints.forEach((point, index) => {
+        const marker = L.circleMarker([point.lat, point.lng], {
+          radius: 6,
+          fillColor: '#3b82f6',
+          color: '#fff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8,
+        });
+        marker.bindPopup(`Point ${index + 1}`);
+        drawingLayersRef.current?.addLayer(marker);
+      });
+
+      if (drawingPoints.length > 1) {
+        const line = L.polyline(drawingPoints, {
+          color: '#3b82f6',
+          weight: 3,
+          opacity: 0.7,
+          dashArray: '10, 5',
+        });
+        drawingLayersRef.current?.addLayer(line);
+      }
+    }
+
+    onDrawingUpdate?.(drawingPoints.length);
+  }, [drawingPoints, onDrawingUpdate]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
 
     const map = mapRef.current;
 
     const handleMapClick = (e: L.LeafletMouseEvent) => {
+      if (!isDrawing) return;
       const newPoint = { lat: e.latlng.lat, lng: e.latlng.lng };
       setDrawingPoints((prev) => [...prev, newPoint]);
-
-      L.circleMarker(e.latlng, {
-        radius: 6,
-        fillColor: '#3b82f6',
-        color: '#fff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-      }).addTo(map);
     };
 
     map.on('click', handleMapClick);
@@ -151,14 +196,7 @@ export default function MapView({
     if (!isDrawing && drawingPoints.length > 0) {
       onRouteCreate(drawingPoints);
       setDrawingPoints([]);
-      
-      if (mapRef.current) {
-        mapRef.current.eachLayer((layer) => {
-          if (layer instanceof L.CircleMarker) {
-            mapRef.current?.removeLayer(layer);
-          }
-        });
-      }
+      drawingLayersRef.current?.clearLayers();
     }
   }, [isDrawing, drawingPoints, onRouteCreate]);
 
