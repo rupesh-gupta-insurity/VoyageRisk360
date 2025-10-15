@@ -2,9 +2,9 @@
 
 ## Overview
 
-VoyageRisk360 is a data-intensive web application designed for maritime professionals to assess and visualize risks along shipping routes. The platform combines interactive mapping, risk analysis, and data visualization to help users make informed decisions about maritime voyages by analyzing weather, piracy, traffic density, and historical claims data.
+VoyageRisk360 is a **public demo application** for maritime route risk assessment. The platform combines interactive mapping, risk analysis, and data visualization to help users explore maritime voyage risks through simulated weather, piracy, traffic density, and historical claims data.
 
-The application features a map-first interface where users can draw routes, visualize multi-layer risk heatmaps, and receive comprehensive risk scores for their planned voyages. Users can save routes, configure risk alerts, and export data for reporting purposes.
+The application features a map-first interface where users can draw routes, visualize multi-layer risk heatmaps, and receive comprehensive risk scores. All data is stored locally in the browser using localStorage, making it perfect for demonstrations and proof-of-concept scenarios.
 
 ## User Preferences
 
@@ -13,28 +13,23 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### October 15, 2025
-- **✅ MVP Complete**: All core features implemented and tested
-- **Authentication Domain Fix**:
-  - Fixed Replit Auth to handle both `.replit.dev` and `.repl.co` domain variations
-  - Passport strategies now automatically registered for both domain families
-  - Prevents authentication callback failures when accessing app via different domain variants
-  - Added whitespace trimming for defensive domain parsing
-- **Security Fixes Applied**:
-  - Fixed critical cross-tenant route access vulnerability - all route operations now properly scoped by userId
-  - Fixed route deletion to verify ownership BEFORE deleting (prevents unauthorized deletion)
-  - Improved error responses: 403 for unauthorized, 404 for not found, 500 for server errors
-- **Schema Improvements**:
-  - Separated request schema (`createRouteRequestSchema`) from database schema (`insertRouteSchema`)
-  - Server now properly injects risk scores during route creation
-  - Fixed validation to accept client requests without pre-calculated risk scores
-- **Frontend Enhancements**:
-  - Added `useCallback` to route creation handler for stable dependency in MapView
-  - Improved error handling and user feedback with toast notifications
-  - All components have proper `data-testid` attributes for testing
+- **🎉 Converted to Public Demo App**:
+  - **Removed all authentication** - app now works without login
+  - **localStorage persistence** - all routes and settings saved in browser
+  - **Simplified backend** - only risk calculation endpoint remains
+  - **Demo Mode badge** - clearly indicates public demo status
+  - **Direct access** - "Get Started" button goes straight to dashboard
+- **Implementation Details**:
+  - Created `StoredRoute` type for localStorage with embedded waypoints
+  - Backend reduced to `/api/calculate-risk` and `/api/health` endpoints only
+  - All CRUD operations handled client-side with localStorage helpers
+  - Removed: Replit Auth, session management, database user/route storage
+  - Routes stored with key: `voyagerisk360_routes`
+  - Alert config stored with key: `voyagerisk360_alert_config`
 - **Testing**:
   - End-to-end tests passing successfully
-  - Verified complete user workflow: login → draw route → save → delete → logout
-  - Route creation, risk scoring, alerts, and exports all functional
+  - Verified complete workflow: draw route → save → load → delete → export
+  - Risk calculation, alerts, and PDF exports all functional
 
 ## System Architecture
 
@@ -44,7 +39,7 @@ Preferred communication style: Simple, everyday language.
 - **Framework:** React with TypeScript
 - **Build Tool:** Vite for fast development and optimized production builds
 - **Routing:** Wouter for lightweight client-side routing
-- **State Management:** TanStack Query (React Query) for server state management
+- **State Management:** localStorage for client-side persistence
 - **UI Components:** Radix UI primitives with shadcn/ui design system (New York variant)
 - **Styling:** Tailwind CSS with custom maritime-themed design tokens
 - **Mapping:** Leaflet for interactive map visualization
@@ -68,70 +63,68 @@ Preferred communication style: Simple, everyday language.
 **Technology Stack:**
 - **Runtime:** Node.js with TypeScript
 - **Framework:** Express.js for REST API
-- **Database ORM:** Drizzle ORM
-- **Authentication:** Replit Auth with OpenID Connect (OIDC)
-- **Session Management:** express-session with PostgreSQL session store
+- **Risk Calculation:** Server-side risk scoring engine
 
 **API Design:**
-- RESTful endpoints under `/api` namespace
-- Authentication middleware protecting all data endpoints
+- Minimal API surface - only risk calculation endpoint
+- POST `/api/calculate-risk` - Calculates risk scores for route waypoints
+- GET `/api/health` - Health check endpoint
+- No authentication required
 - Request validation using Zod schemas
-- Error handling middleware for consistent error responses
 
 **Core Services:**
-- **Risk Engine (`server/riskEngine.ts`):** Calculates risk scores based on waypoint coordinates and simulated risk zones. Currently uses hardcoded risk zones (Gulf of Aden for piracy, monsoon regions for weather, etc.) with plans to integrate real APIs (OpenWeatherMap, MarineTraffic, IMB Piracy Reports)
-- **Storage Layer (`server/storage.ts`):** Database abstraction interface for all CRUD operations
-- **Authentication (`server/replitAuth.ts`):** Handles Replit OIDC authentication flow and session management
+- **Risk Engine (`server/riskEngine.ts`):** Calculates risk scores based on waypoint coordinates and simulated risk zones. Uses hardcoded risk zones (Gulf of Aden for piracy, monsoon regions for weather, etc.) to demonstrate risk calculation capabilities
+- **localStorage Helper (`client/src/lib/localStorage.ts`):** Client-side storage for routes and alert configuration
 
 ### Data Storage
 
-**Database:** PostgreSQL (via Neon serverless)
+**Storage Method:** Browser localStorage (client-side only)
 
-**Schema Design:**
+**Data Structure:**
 
-1. **sessions** - Session storage table (required for Replit Auth)
-   - Stores serialized session data with expiration timestamps
+1. **Routes** (`voyagerisk360_routes`)
+   ```typescript
+   interface StoredRoute {
+     id: string;
+     name: string;
+     riskScore: number;
+     weatherRisk: number;
+     piracyRisk: number;
+     trafficRisk: number;
+     claimsRisk: number;
+     createdAt: Date;
+     waypoints: Array<{
+       latitude: string;
+       longitude: string;
+       sequence: number;
+     }>;
+   }
+   ```
 
-2. **users** - User accounts
-   - Stores user profile information from OIDC provider
-   - Fields: id (UUID), email, firstName, lastName, profileImageUrl, timestamps
-
-3. **routes** - Saved maritime routes
-   - Links to users via foreign key with cascade deletion
-   - Stores route metadata and aggregated risk scores
-   - Fields: id, userId, name, riskScore, weatherRisk, piracyRisk, trafficRisk, claimsRisk, createdAt
-
-4. **waypoints** - Route coordinate points
-   - Links to routes via foreign key with cascade deletion
-   - Stores individual points with sequence ordering
-   - Fields: id, routeId, latitude, longitude, sequence
-
-5. **alert_configs** - User alert preferences
-   - One-to-one relationship with users
-   - Stores risk threshold and enable/disable state
-   - Fields: id, userId, threshold, enabled, timestamps
+2. **Alert Configuration** (`voyagerisk360_alert_config`)
+   ```typescript
+   interface AlertConfig {
+     id: string;
+     userId: string;  // Always "demo-user"
+     enabled: boolean;
+     threshold: number;
+     updatedAt: Date;
+   }
+   ```
 
 **Data Flow:**
-- Client sends waypoints → Server calculates risks → Saves route with risk scores → Returns complete route object with waypoints
-- Risk calculations are performed server-side to maintain consistency and allow future API integration
+- Client draws waypoints → Sends to `/api/calculate-risk` → Server returns risk scores → Client saves complete route to localStorage
+- All route CRUD operations handled entirely in browser
+- Data persists only on current browser/device
 
-### Authentication & Authorization
+### No Authentication
 
-**Authentication Provider:** Replit Auth (OpenID Connect)
-
-**Flow:**
-1. Unauthenticated users see landing page
-2. Login redirects to Replit OIDC provider
-3. Callback creates/updates user record and establishes session
-4. Session stored in PostgreSQL with 7-day TTL
-5. All API routes protected with `isAuthenticated` middleware
-6. Frontend queries `/api/auth/user` to determine auth state
-
-**Session Security:**
-- HTTP-only cookies
-- Secure flag enabled
-- Session secret from environment variable
-- PostgreSQL-backed session store for scalability
+The application is a **public demo** with no authentication:
+- **Landing page** (`/`) - Shows features and "Get Started" button
+- **Dashboard** (`/dashboard`) - Main application, accessible to anyone
+- **Demo Mode badge** - Displayed in header to indicate demo status
+- **No user accounts** - No login, registration, or session management
+- **Browser-only persistence** - Data saved in localStorage, not shared across devices
 
 ### External Dependencies
 
