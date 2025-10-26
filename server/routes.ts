@@ -17,7 +17,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/calculate-risk', async (req, res) => {
     try {
       const { waypoints } = riskCalculationSchema.parse(req.body);
-      const riskScores = calculateRouteRisk(waypoints);
+      const riskScores = await calculateRouteRisk(waypoints);
       res.json(riskScores);
     } catch (error: any) {
       console.error("Error calculating risk:", error);
