@@ -8,9 +8,10 @@ import DrawingTools from '@/components/DrawingTools';
 import RiskLegend from '@/components/RiskLegend';
 import SaveRouteDialog from '@/components/SaveRouteDialog';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
+import AddressLookup from '@/components/AddressLookup';
 import ThemeToggle from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { Ship } from 'lucide-react';
+import { Ship, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAllRoutes, saveRoute, deleteRoute as deleteRouteLS, getAlertConfig, saveAlertConfig, type StoredRoute } from '@/lib/localStorage';
 import jsPDF from 'jspdf';
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const [alertConfig, setAlertConfig] = useState({ enabled: true, threshold: 75 });
   const [isSaving, setIsSaving] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAddressLookup, setShowAddressLookup] = useState(false);
 
   // Load routes and alert config from localStorage on mount
   useEffect(() => {
@@ -207,6 +209,28 @@ export default function Dashboard() {
     });
   };
 
+  const handleAddressRouteCreate = async (
+    origin: { latitude: number; longitude: number; name: string },
+    destination: { latitude: number; longitude: number; name: string }
+  ) => {
+    // Create a simple straight-line route between origin and destination
+    // In a production app, you'd use a proper maritime routing API
+    const waypoints = [
+      { lat: origin.latitude, lng: origin.longitude },
+      { lat: destination.latitude, lng: destination.longitude },
+    ];
+
+    setShowAddressLookup(false);
+    
+    // Use the same flow as manual drawing
+    await handleRouteCreate(waypoints);
+    
+    toast({
+      title: 'Route Created',
+      description: `Route from ${origin.name.split(',')[0]} to ${destination.name.split(',')[0]}`,
+    });
+  };
+
   const formattedRoutes = routes.map(route => ({
     ...route,
     waypoints: route.waypoints.map(wp => ({
@@ -277,7 +301,7 @@ export default function Dashboard() {
             onDrawingUpdate={(count) => setDrawingPoints(Array(count).fill({ lat: 0, lng: 0 }))}
           />
 
-          <div className="absolute top-4 left-4 z-[1000]">
+          <div className="absolute top-4 left-4 z-[1000] space-y-2">
             <DrawingTools
               isDrawing={isDrawing}
               waypointCount={drawingPoints.length}
@@ -289,6 +313,18 @@ export default function Dashboard() {
                 setTempWaypoints([]);
               }}
             />
+            
+            {!isDrawing && (
+              <Button
+                onClick={() => setShowAddressLookup(true)}
+                variant="default"
+                className="w-full shadow-lg"
+                data-testid="button-address-lookup"
+              >
+                <MapPin className="w-4 h-4 mr-2" />
+                Plan by Address
+              </Button>
+            )}
           </div>
 
           <div className="absolute bottom-4 right-4 z-[1000]">
@@ -309,6 +345,12 @@ export default function Dashboard() {
         waypoints={tempWaypoints}
         riskScores={previewRiskScores}
         isCalculating={isSaving && !previewRiskScores}
+      />
+
+      <AddressLookup
+        open={showAddressLookup}
+        onOpenChange={setShowAddressLookup}
+        onRouteCreate={handleAddressRouteCreate}
       />
 
       {showOnboarding && (
