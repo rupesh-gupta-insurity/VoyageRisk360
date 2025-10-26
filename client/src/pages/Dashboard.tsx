@@ -230,7 +230,7 @@ export default function Dashboard() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="w-80 border-r p-4 space-y-4 overflow-y-auto">
+        <aside className="w-80 border-r bg-card p-4 space-y-4 overflow-y-auto">
           <RouteList
             routes={formattedRoutes}
             selectedRoute={selectedRoute}
