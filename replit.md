@@ -12,6 +12,27 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 26, 2025
+- **🌐 Real Maritime API Integration**:
+  - **Open-Meteo Marine Weather API** - Real-time wave heights, sea surface temperature, ocean currents
+  - **AISstream.io WebSocket API** - Live vessel traffic density from global AIS data
+  - **Nominatim Geocoding** - Address-to-coordinate conversion for route planning
+  - **AddressLookup Component** - Search-based route creation with autocomplete suggestions
+  - **Graceful Fallback** - Automatically falls back to simulated data when APIs unavailable
+- **Implementation Details**:
+  - Created `server/services/weatherService.ts` for marine weather data
+  - Created `server/services/trafficService.ts` for AIS vessel tracking
+  - Created `server/services/geocodingService.ts` for address lookups
+  - Updated risk engine to async with real API data integration
+  - Added `/api/geocode` and `/api/route-endpoints` endpoints
+  - Fixed AddressLookup debounce bug with separate timeout refs
+  - Address-based routes create straight-line paths (future: maritime routing API)
+- **Testing**:
+  - Real weather data successfully integrated with fallback
+  - Live vessel traffic density working via WebSocket
+  - Address lookup with autocomplete functional
+  - End-to-end workflow verified
+
 ### October 15, 2025
 - **🎉 Converted to Public Demo App**:
   - **Removed all authentication** - app now works without login
@@ -52,8 +73,9 @@ Preferred communication style: Simple, everyday language.
 
 **Key Frontend Features:**
 - Interactive map with drawing tools for route creation
+- Address-based route planning with geocoding search and autocomplete
 - Multi-layer risk heatmap visualization (toggleable layers)
-- Real-time risk score calculation display
+- Real-time risk score calculation display with live maritime data
 - Route management (save, load, delete, export)
 - Alert configuration interface
 - PDF and CSV export functionality (jsPDF, PapaParse)
@@ -66,14 +88,19 @@ Preferred communication style: Simple, everyday language.
 - **Risk Calculation:** Server-side risk scoring engine
 
 **API Design:**
-- Minimal API surface - only risk calculation endpoint
-- POST `/api/calculate-risk` - Calculates risk scores for route waypoints
+- Minimal API surface - risk calculation and geocoding endpoints
+- POST `/api/calculate-risk` - Calculates risk scores for route waypoints using real maritime data
+- GET `/api/geocode` - Converts address strings to coordinates via Nominatim
+- GET `/api/route-endpoints` - Returns major port coordinates for quick route planning
 - GET `/api/health` - Health check endpoint
 - No authentication required
 - Request validation using Zod schemas
 
 **Core Services:**
-- **Risk Engine (`server/riskEngine.ts`):** Calculates risk scores based on waypoint coordinates and simulated risk zones. Uses hardcoded risk zones (Gulf of Aden for piracy, monsoon regions for weather, etc.) to demonstrate risk calculation capabilities
+- **Risk Engine (`server/riskEngine.ts`):** Async risk calculation using real maritime APIs with graceful fallback to simulated data. Integrates weather, vessel traffic, and risk zone data.
+- **Weather Service (`server/services/weatherService.ts`):** Fetches real-time marine weather (wave heights, temperature) from Open-Meteo Marine API with OpenWeatherMap backup
+- **Traffic Service (`server/services/trafficService.ts`):** Queries live vessel density via AISstream.io WebSocket API using AIS data
+- **Geocoding Service (`server/services/geocodingService.ts`):** Converts addresses to coordinates using Nominatim API with proper rate limiting and attribution
 - **localStorage Helper (`client/src/lib/localStorage.ts`):** Client-side storage for routes and alert configuration
 
 ### Data Storage
@@ -128,15 +155,21 @@ The application is a **public demo** with no authentication:
 
 ### External Dependencies
 
-**Current Dependencies:**
-- **Neon PostgreSQL:** Serverless PostgreSQL database hosting
-- **Replit Auth:** Identity provider for user authentication
-- **OpenStreetMap:** Map tile provider for Leaflet
+**Active API Integrations:**
+- **Open-Meteo Marine Weather API:** Free, no API key required. Provides real-time wave heights, sea surface temperature, ocean currents, and swell data. Automatically handles rate limiting.
+- **AISstream.io WebSocket API:** Free tier available with GitHub signup. Provides live global vessel AIS data for traffic density calculation. Requires `AISSTREAM_API_KEY` environment variable.
+- **Nominatim Geocoding (OpenStreetMap):** Free, no API key required. Converts addresses to coordinates for route planning. Requires User-Agent header per usage policy.
+- **OpenStreetMap Tiles:** Map tile provider for Leaflet base maps
 
-**Planned Integrations (currently simulated):**
-- **OpenWeatherMap API:** Real-time weather data and forecasts
-- **MarineTraffic API:** Live vessel traffic density data
-- **IMB Piracy Reporting Centre:** Piracy incident reports and risk zones
+**Fallback Strategy:**
+- All maritime APIs (weather, traffic) gracefully fall back to simulated data if unavailable or rate-limited
+- Fallback is logged for transparency but doesn't disrupt user experience
+- Simulated data uses realistic risk zones (Gulf of Aden piracy, monsoon regions, major shipping lanes)
+
+**Planned Future Integrations:**
+- **OpenWeatherMap API:** Backup weather provider (currently integrated as fallback)
+- **Maritime Routing API:** Replace straight-line routes with realistic maritime paths
+- **IMB Piracy Reporting Centre:** Real-time piracy incident data
 - **Insurance Claims Database:** Historical maritime insurance claims data
 
 **Client Libraries:**
@@ -149,3 +182,8 @@ The application is a **public demo** with no authentication:
 - Replit-specific Vite plugins for development banner and cartographer
 - TypeScript for type safety across frontend and backend
 - Drizzle Kit for database migrations
+
+**Environment Variables:**
+- `AISSTREAM_API_KEY` - Optional, for live vessel traffic data (free tier via GitHub signup)
+- `DATABASE_URL` - PostgreSQL connection (not currently used for demo app)
+- `SESSION_SECRET` - Session encryption (not used in public demo mode)
