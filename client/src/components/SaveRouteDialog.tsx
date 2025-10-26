@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -70,6 +71,9 @@ export default function SaveRouteDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Save Route</DialogTitle>
+          <DialogDescription>
+            Review the risk assessment and provide a name for your route.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {isCalculating ? (
