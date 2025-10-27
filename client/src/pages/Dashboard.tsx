@@ -301,7 +301,7 @@ export default function Dashboard() {
             onDrawingUpdate={(count) => setDrawingPoints(Array(count).fill({ lat: 0, lng: 0 }))}
           />
 
-          <div className="absolute top-4 left-4 z-[1000] space-y-2">
+          <div className="absolute top-4 left-4 z-[1000]">
             <DrawingTools
               isDrawing={isDrawing}
               waypointCount={drawingPoints.length}
@@ -312,19 +312,8 @@ export default function Dashboard() {
                 setDrawingPoints([]);
                 setTempWaypoints([]);
               }}
+              onOpenAddressLookup={() => setShowAddressLookup(true)}
             />
-            
-            {!isDrawing && (
-              <Button
-                onClick={() => setShowAddressLookup(true)}
-                variant="default"
-                className="w-full shadow-lg"
-                data-testid="button-address-lookup"
-              >
-                <MapPin className="w-4 h-4 mr-2" />
-                Plan by Address
-              </Button>
-            )}
           </div>
 
           <div className="absolute bottom-4 right-4 z-[1000]">

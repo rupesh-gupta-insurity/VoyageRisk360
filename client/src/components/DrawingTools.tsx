@@ -7,6 +7,7 @@ interface DrawingToolsProps {
   onStartDrawing: () => void;
   onFinishDrawing: () => void;
   onCancelDrawing: () => void;
+  onOpenAddressLookup: () => void;
   waypointCount?: number;
 }
 
@@ -15,21 +16,34 @@ export default function DrawingTools({
   onStartDrawing,
   onFinishDrawing,
   onCancelDrawing,
+  onOpenAddressLookup,
   waypointCount = 0,
 }: DrawingToolsProps) {
   return (
     <Card className="p-3 backdrop-blur-md bg-card/90 shadow-lg">
       {!isDrawing ? (
-        <Button
-          onClick={onStartDrawing}
-          variant="default"
-          size="default"
-          data-testid="button-start-drawing"
-          className="w-full"
-        >
-          <Pencil className="w-4 h-4 mr-2" />
-          Draw New Route
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={onStartDrawing}
+            variant="default"
+            size="default"
+            data-testid="button-start-drawing"
+            className="flex-1"
+          >
+            <Pencil className="w-4 h-4 mr-2" />
+            Draw on Map
+          </Button>
+          <Button
+            onClick={onOpenAddressLookup}
+            variant="outline"
+            size="default"
+            data-testid="button-address-lookup"
+            className="flex-1"
+          >
+            <MapPin className="w-4 h-4 mr-2" />
+            Search Address
+          </Button>
+        </div>
       ) : (
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
