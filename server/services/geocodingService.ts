@@ -40,10 +40,11 @@ export async function searchLocation(
 
     const url = `https://nominatim.openstreetmap.org/search?${params}`;
     
-    // Add User-Agent header as required by Nominatim usage policy
+    // Add User-Agent and Accept-Language headers
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'VoyageRisk360/1.0 (Maritime Route Risk Assessment Demo)',
+        'Accept-Language': 'en', // Force English results
       },
     });
 
