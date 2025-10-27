@@ -34,17 +34,18 @@ export async function searchLocation(
       format: 'json',
       limit: Math.min(limit, 40).toString(),
       addressdetails: '1',
+      'accept-language': 'en', // Force English language results
       // Include email for usage policy compliance (for large requests)
       email: 'voyagerisk360@replit.com',
     });
 
     const url = `https://nominatim.openstreetmap.org/search?${params}`;
     
-    // Add User-Agent and Accept-Language headers
+    // Add User-Agent header as required by Nominatim usage policy
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'VoyageRisk360/1.0 (Maritime Route Risk Assessment Demo)',
-        'Accept-Language': 'en', // Force English results
+        'Accept-Language': 'en', // Also set in header for redundancy
       },
     });
 
