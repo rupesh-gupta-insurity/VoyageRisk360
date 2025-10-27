@@ -1,6 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+function getRiskColor(score: number): string {
+  if (score < 20) return '#22c55e';
+  if (score < 40) return '#84cc16';
+  if (score < 60) return '#eab308';
+  if (score < 80) return '#f97316';
+  return '#ef4444';
+}
 
 interface MapViewProps {
   routes: Array<{
@@ -17,20 +25,28 @@ interface MapViewProps {
     traffic: boolean;
     claims: boolean;
   };
+  layerOpacity?: number;
   isDrawing: boolean;
   onRouteCreate: (waypoints: Array<{ lat: number; lng: number }>) => void;
   onDrawingUpdate?: (pointCount: number) => void;
 }
 
-export default function MapView({
+export interface MapViewRef {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetView: () => void;
+}
+
+const MapView = forwardRef<MapViewRef, MapViewProps>(({
   routes,
   selectedRoute,
   onRouteSelect,
   layers,
+  layerOpacity = 50,
   isDrawing,
   onRouteCreate,
   onDrawingUpdate,
-}: MapViewProps) {
+}, ref) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const routeLayersRef = useRef<L.LayerGroup | null>(null);
@@ -106,10 +122,12 @@ export default function MapView({
 
     riskLayersRef.current.clearLayers();
 
+    const opacity = layerOpacity / 100;
+
     if (layers.weather) {
       const weatherZone = L.rectangle(
         [[10, 40], [30, 80]],
-        { color: '#3b82f6', weight: 1, fillOpacity: 0.2 }
+        { color: '#3b82f6', weight: 1, fillOpacity: opacity }
       );
       weatherZone.bindPopup('Storm Warning Zone');
       riskLayersRef.current.addLayer(weatherZone);
@@ -118,7 +136,7 @@ export default function MapView({
     if (layers.piracy) {
       const piracyZone = L.rectangle(
         [[0, 40], [15, 60]],
-        { color: '#ef4444', weight: 1, fillOpacity: 0.2 }
+        { color: '#ef4444', weight: 1, fillOpacity: opacity }
       );
       piracyZone.bindPopup('Piracy Risk Zone');
       riskLayersRef.current.addLayer(piracyZone);
@@ -127,7 +145,7 @@ export default function MapView({
     if (layers.traffic) {
       const trafficZone = L.rectangle(
         [[25, 50], [40, 70]],
-        { color: '#f59e0b', weight: 1, fillOpacity: 0.2 }
+        { color: '#f59e0b', weight: 1, fillOpacity: opacity }
       );
       trafficZone.bindPopup('High Traffic Zone');
       riskLayersRef.current.addLayer(trafficZone);
@@ -136,12 +154,12 @@ export default function MapView({
     if (layers.claims) {
       const claimsZone = L.rectangle(
         [[5, 65], [20, 85]],
-        { color: '#a855f7', weight: 1, fillOpacity: 0.2 }
+        { color: '#a855f7', weight: 1, fillOpacity: opacity }
       );
       claimsZone.bindPopup('Historical Claims Zone');
       riskLayersRef.current.addLayer(claimsZone);
     }
-  }, [layers]);
+  }, [layers, layerOpacity]);
 
   useEffect(() => {
     if (!drawingLayersRef.current) return;
@@ -202,13 +220,28 @@ export default function MapView({
     }
   }, [isDrawing, drawingPoints, onRouteCreate]);
 
-  return <div ref={containerRef} className="w-full h-full" data-testid="map-view" />;
-}
+  // Expose map control methods to parent component
+  useImperativeHandle(ref, () => ({
+    zoomIn: () => {
+      if (mapRef.current) {
+        mapRef.current.zoomIn();
+      }
+    },
+    zoomOut: () => {
+      if (mapRef.current) {
+        mapRef.current.zoomOut();
+      }
+    },
+    resetView: () => {
+      if (mapRef.current) {
+        mapRef.current.setView([20, 60], 3);
+      }
+    },
+  }));
 
-function getRiskColor(score: number): string {
-  if (score < 20) return '#22c55e';
-  if (score < 40) return '#84cc16';
-  if (score < 60) return '#eab308';
-  if (score < 80) return '#f97316';
-  return '#ef4444';
-}
+  return <div ref={containerRef} className="w-full h-full" data-testid="map-view" />;
+});
+
+MapView.displayName = 'MapView';
+
+export default MapView;

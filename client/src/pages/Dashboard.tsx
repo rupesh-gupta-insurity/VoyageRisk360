@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import MapView from '@/components/MapView';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import MapView, { type MapViewRef } from '@/components/MapView';
 import RiskScoreCard from '@/components/RiskScoreCard';
+import RiskTrendChart from '@/components/RiskTrendChart';
 import LayerControl from '@/components/LayerControl';
 import RouteList from '@/components/RouteList';
 import AlertConfig from '@/components/AlertConfig';
 import DrawingTools from '@/components/DrawingTools';
+import MapControls from '@/components/MapControls';
 import RiskLegend from '@/components/RiskLegend';
 import SaveRouteDialog from '@/components/SaveRouteDialog';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
@@ -18,6 +20,7 @@ import jsPDF from 'jspdf';
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const mapRef = useRef<MapViewRef>(null);
   
   const [routes, setRoutes] = useState<StoredRoute[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
@@ -27,6 +30,7 @@ export default function Dashboard() {
     traffic: false,
     claims: false,
   });
+  const [layerOpacity, setLayerOpacity] = useState(50);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingPoints, setDrawingPoints] = useState<Array<{ lat: number; lng: number }>>([]);
   const [tempWaypoints, setTempWaypoints] = useState<Array<{ lat: number; lng: number }>>([]);
@@ -264,16 +268,30 @@ export default function Dashboard() {
           />
 
           {currentRoute && (
-            <RiskScoreCard
-              overall={currentRoute.riskScore}
-              weather={currentRoute.weatherRisk}
-              piracy={currentRoute.piracyRisk}
-              traffic={currentRoute.trafficRisk}
-              claims={currentRoute.claimsRisk}
-            />
+            <>
+              <RiskScoreCard
+                overall={currentRoute.riskScore}
+                weather={currentRoute.weatherRisk}
+                piracy={currentRoute.piracyRisk}
+                traffic={currentRoute.trafficRisk}
+                claims={currentRoute.claimsRisk}
+              />
+              
+              <RiskTrendChart
+                weather={currentRoute.weatherRisk}
+                piracy={currentRoute.piracyRisk}
+                traffic={currentRoute.trafficRisk}
+                claims={currentRoute.claimsRisk}
+              />
+            </>
           )}
 
-          <LayerControl layers={layers} onLayerToggle={handleLayerToggle} />
+          <LayerControl
+            layers={layers}
+            onLayerToggle={handleLayerToggle}
+            opacity={layerOpacity}
+            onOpacityChange={setLayerOpacity}
+          />
 
           <AlertConfig
             threshold={alertConfig.threshold}
@@ -292,13 +310,15 @@ export default function Dashboard() {
 
         <main className="flex-1 relative">
           <MapView
+            ref={mapRef}
             routes={formattedRoutes}
             selectedRoute={selectedRoute}
             onRouteSelect={setSelectedRoute}
             layers={layers}
+            layerOpacity={layerOpacity}
             isDrawing={isDrawing}
             onRouteCreate={handleRouteCreate}
-            onDrawingUpdate={(count) => setDrawingPoints(Array(count).fill({ lat: 0, lng: 0 }))}
+            onDrawingUpdate={(count: number) => setDrawingPoints(Array(count).fill({ lat: 0, lng: 0 }))}
           />
 
           <div className="absolute top-4 left-4 z-[1000]">
@@ -313,6 +333,14 @@ export default function Dashboard() {
                 setTempWaypoints([]);
               }}
               onOpenAddressLookup={() => setShowAddressLookup(true)}
+            />
+          </div>
+
+          <div className="absolute top-4 right-4 z-[1000]">
+            <MapControls
+              onZoomIn={() => mapRef.current?.zoomIn()}
+              onZoomOut={() => mapRef.current?.zoomOut()}
+              onResetView={() => mapRef.current?.resetView()}
             />
           </div>
 

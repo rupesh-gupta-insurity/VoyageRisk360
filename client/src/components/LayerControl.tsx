@@ -1,5 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 import { Cloud, AlertTriangle, Ship, FileText } from 'lucide-react';
 
 interface LayerControlProps {
@@ -10,9 +11,16 @@ interface LayerControlProps {
     claims: boolean;
   };
   onLayerToggle: (layer: keyof LayerControlProps['layers']) => void;
+  opacity?: number;
+  onOpacityChange?: (opacity: number) => void;
 }
 
-export default function LayerControl({ layers, onLayerToggle }: LayerControlProps) {
+export default function LayerControl({
+  layers,
+  onLayerToggle,
+  opacity = 50,
+  onOpacityChange,
+}: LayerControlProps) {
   const layerItems = [
     { key: 'weather' as const, icon: Cloud, label: 'Weather', color: 'text-chart-1' },
     { key: 'piracy' as const, icon: AlertTriangle, label: 'Piracy', color: 'text-chart-2' },
@@ -38,6 +46,24 @@ export default function LayerControl({ layers, onLayerToggle }: LayerControlProp
           </div>
         ))}
       </div>
+      
+      {onOpacityChange && (
+        <div className="mt-4 pt-4 border-t">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Layer Opacity</span>
+            <span className="text-xs text-muted-foreground">{opacity}%</span>
+          </div>
+          <Slider
+            value={[opacity]}
+            onValueChange={(values) => onOpacityChange(values[0])}
+            min={10}
+            max={100}
+            step={10}
+            className="cursor-pointer"
+            data-testid="slider-layer-opacity"
+          />
+        </div>
+      )}
     </Card>
   );
 }
