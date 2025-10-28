@@ -275,6 +275,8 @@ export default function Dashboard() {
                 piracy={currentRoute.piracyRisk}
                 traffic={currentRoute.trafficRisk}
                 claims={currentRoute.claimsRisk}
+                alertThreshold={alertConfig.threshold}
+                alertEnabled={alertConfig.enabled}
               />
               
               <RiskTrendChart

@@ -7,9 +7,12 @@ interface RiskScoreCardProps {
   piracy: number;
   traffic: number;
   claims: number;
+  alertThreshold?: number;
+  alertEnabled?: boolean;
 }
 
-export default function RiskScoreCard({ overall, weather, piracy, traffic, claims }: RiskScoreCardProps) {
+export default function RiskScoreCard({ overall, weather, piracy, traffic, claims, alertThreshold, alertEnabled }: RiskScoreCardProps) {
+  const exceedsThreshold = alertEnabled && alertThreshold !== undefined && overall > alertThreshold;
   const getRiskColor = (score: number) => {
     if (score < 20) return 'text-risk-low';
     if (score < 40) return 'text-risk-medium-low';
@@ -43,6 +46,15 @@ export default function RiskScoreCard({ overall, weather, piracy, traffic, claim
 
   return (
     <Card className="p-6">
+      {exceedsThreshold && (
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive rounded-md flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-destructive" />
+          <p className="text-sm text-destructive font-medium">
+            Exceeds risk threshold ({alertThreshold}%)
+          </p>
+        </div>
+      )}
+      
       <div className="space-y-6">
         <div className="text-center">
           <p className="text-sm text-muted-foreground mb-2">Overall Risk Score</p>
