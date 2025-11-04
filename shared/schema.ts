@@ -62,6 +62,40 @@ export const alertConfigs = pgTable("alert_configs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const policies = pgTable("policies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyNo: varchar("policy_no").notNull().unique(),
+  policyType: varchar("policy_type").notNull(),
+  policyName: varchar("policy_name").notNull(),
+  underwritingYear: integer("underwriting_year").notNull(),
+  
+  insurer: varchar("insurer").notNull(),
+  assured: varchar("assured").notNull(),
+  broker: varchar("broker"),
+  
+  effectiveDate: timestamp("effective_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  status: varchar("status").notNull().default('Active'),
+  
+  currency: varchar("currency").notNull().default('USD'),
+  sumInsured: decimal("sum_insured", { precision: 15, scale: 2 }).notNull(),
+  premium: decimal("premium", { precision: 15, scale: 2 }).notNull(),
+  deductible: decimal("deductible", { precision: 15, scale: 2 }),
+  
+  coverageTerritory: varchar("coverage_territory").notNull(),
+  coverageDetails: jsonb("coverage_details"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const policyRouteLinks = pgTable("policy_route_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: varchar("policy_id").notNull().references(() => policies.id, { onDelete: 'cascade' }),
+  routeId: varchar("route_id").notNull().references(() => routes.id, { onDelete: 'cascade' }),
+  linkedAt: timestamp("linked_at").defaultNow(),
+});
+
 // Zod schemas
 export const upsertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -98,12 +132,27 @@ export const insertAlertConfigSchema = createInsertSchema(alertConfigs).omit({
   updatedAt: true,
 });
 
+export const insertPolicySchema = createInsertSchema(policies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPolicyRouteLinkSchema = createInsertSchema(policyRouteLinks).omit({
+  id: true,
+  linkedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Route = typeof routes.$inferSelect;
 export type Waypoint = typeof waypoints.$inferSelect;
 export type AlertConfig = typeof alertConfigs.$inferSelect;
+export type Policy = typeof policies.$inferSelect;
+export type PolicyRouteLink = typeof policyRouteLinks.$inferSelect;
 export type CreateRouteRequest = z.infer<typeof createRouteRequestSchema>;
 export type InsertRoute = z.infer<typeof insertRouteSchema>;
 export type InsertAlertConfig = z.infer<typeof insertAlertConfigSchema>;
+export type InsertPolicy = z.infer<typeof insertPolicySchema>;
+export type InsertPolicyRouteLink = z.infer<typeof insertPolicyRouteLinkSchema>;
