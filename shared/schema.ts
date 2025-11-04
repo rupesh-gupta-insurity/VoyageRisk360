@@ -96,6 +96,71 @@ export const policyRouteLinks = pgTable("policy_route_links", {
   linkedAt: timestamp("linked_at").defaultNow(),
 });
 
+export const shipmentCertificates = pgTable("shipment_certificates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: varchar("policy_id").notNull().references(() => policies.id, { onDelete: 'cascade' }),
+  
+  certificateNumber: varchar("certificate_number").notNull().unique(),
+  
+  // Voyage details
+  sourcePort: varchar("source_port").notNull(),
+  sourceCountry: varchar("source_country").notNull(),
+  destinationPort: varchar("destination_port").notNull(),
+  destinationCountry: varchar("destination_country").notNull(),
+  voyageNumber: varchar("voyage_number"),
+  
+  // Dates
+  bookingDate: timestamp("booking_date").notNull(),
+  shipmentDate: timestamp("shipment_date").notNull(),
+  departureDate: timestamp("departure_date"),
+  estimatedArrival: timestamp("estimated_arrival"),
+  actualArrival: timestamp("actual_arrival"),
+  
+  // Vessel information
+  vesselName: varchar("vessel_name").notNull(),
+  vesselType: varchar("vessel_type").notNull(),
+  vesselImo: varchar("vessel_imo"),
+  conveyanceType: varchar("conveyance_type").notNull(),
+  
+  // Cargo details
+  commodity: varchar("commodity").notNull(),
+  commodityDescription: varchar("commodity_description"),
+  hsCode: varchar("hs_code"),
+  packagingType: varchar("packaging_type").notNull(),
+  numberOfPackages: integer("number_of_packages").notNull(),
+  grossWeight: decimal("gross_weight", { precision: 12, scale: 2 }),
+  weightUnit: varchar("weight_unit").default('KG'),
+  containerNumbers: jsonb("container_numbers"),
+  
+  // Financial details
+  insuredAmount: decimal("insured_amount", { precision: 15, scale: 2 }).notNull(),
+  declaredValue: decimal("declared_value", { precision: 15, scale: 2 }).notNull(),
+  currency: varchar("currency").notNull().default('USD'),
+  coverageClause: varchar("coverage_clause").notNull(),
+  deductible: decimal("deductible", { precision: 15, scale: 2 }),
+  
+  // Parties
+  assuredParties: jsonb("assured_parties").notNull(),
+  consignee: varchar("consignee"),
+  notifyParty: varchar("notify_party"),
+  
+  // Additional details
+  billOfLadingNo: varchar("bill_of_lading_no"),
+  incoterm: varchar("incoterm"),
+  hazardousMaterial: boolean("hazardous_material").default(false),
+  hazardClass: varchar("hazard_class"),
+  temperatureControlled: boolean("temperature_controlled").default(false),
+  storageTemperature: varchar("storage_temperature"),
+  
+  // Status and tracking
+  status: varchar("status").notNull().default('Booked'),
+  trackingUrl: varchar("tracking_url"),
+  remarks: varchar("remarks"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Zod schemas
 export const upsertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -143,6 +208,12 @@ export const insertPolicyRouteLinkSchema = createInsertSchema(policyRouteLinks).
   linkedAt: true,
 });
 
+export const insertShipmentCertificateSchema = createInsertSchema(shipmentCertificates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -151,8 +222,10 @@ export type Waypoint = typeof waypoints.$inferSelect;
 export type AlertConfig = typeof alertConfigs.$inferSelect;
 export type Policy = typeof policies.$inferSelect;
 export type PolicyRouteLink = typeof policyRouteLinks.$inferSelect;
+export type ShipmentCertificate = typeof shipmentCertificates.$inferSelect;
 export type CreateRouteRequest = z.infer<typeof createRouteRequestSchema>;
 export type InsertRoute = z.infer<typeof insertRouteSchema>;
 export type InsertAlertConfig = z.infer<typeof insertAlertConfigSchema>;
 export type InsertPolicy = z.infer<typeof insertPolicySchema>;
 export type InsertPolicyRouteLink = z.infer<typeof insertPolicyRouteLinkSchema>;
+export type InsertShipmentCertificate = z.infer<typeof insertShipmentCertificateSchema>;
