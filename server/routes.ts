@@ -322,6 +322,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all shipments (global view across all policies)
+  app.get('/api/shipments', async (req, res) => {
+    try {
+      const {
+        status,
+        sourcePort,
+        destinationPort,
+        commodity,
+        vesselName,
+        insurer,
+        dateFrom,
+        dateTo,
+        search,
+        page = '1',
+        limit = '50'
+      } = req.query;
+      
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const offset = (pageNum - 1) * limitNum;
+      
+      // Build where conditions
+      const conditions = [];
+      
+      if (status) {
+        conditions.push(eq(shipmentCertificates.status, status as string));
+      }
+      
+      if (sourcePort) {
+        conditions.push(like(shipmentCertificates.sourcePort, `%${sourcePort}%`));
+      }
+      
+      if (destinationPort) {
+        conditions.push(like(shipmentCertificates.destinationPort, `%${destinationPort}%`));
+      }
+      
+      if (commodity) {
+        conditions.push(like(shipmentCertificates.commodity, `%${commodity}%`));
+      }
+      
+      if (vesselName) {
+        conditions.push(like(shipmentCertificates.vesselName, `%${vesselName}%`));
+      }
+      
+      if (dateFrom) {
+        conditions.push(sql`${shipmentCertificates.bookingDate} >= ${new Date(dateFrom as string)}`);
+      }
+      
+      if (dateTo) {
+        conditions.push(sql`${shipmentCertificates.bookingDate} <= ${new Date(dateTo as string)}`);
+      }
+      
+      if (search) {
+        const searchTerm = `%${search}%`;
+        conditions.push(
+          or(
+            like(shipmentCertificates.certificateNumber, searchTerm),
+            like(shipmentCertificates.sourcePort, searchTerm),
+            like(shipmentCertificates.destinationPort, searchTerm),
+            like(shipmentCertificates.commodity, searchTerm),
+            like(shipmentCertificates.vesselName, searchTerm),
+            like(shipmentCertificates.billOfLadingNo, searchTerm)
+          )
+        );
+      }
+      
+      // If insurer filter is provided, join with policies
+      let query = db
+        .select({
+          shipment: shipmentCertificates,
+          policy: {
+            id: policies.id,
+            policyNo: policies.policyNo,
+            insurer: policies.insurer,
+            policyType: policies.policyType,
+          }
+        })
+        .from(shipmentCertificates)
+        .leftJoin(policies, eq(shipmentCertificates.policyId, policies.id));
+      
+      if (insurer) {
+        conditions.push(eq(policies.insurer, insurer as string));
+      }
+      
+      // Get total count
+      const countQuery = conditions.length > 0 
+        ? query.where(and(...conditions))
+        : query;
+      
+      const countResult = await countQuery.execute();
+      const total = countResult.length;
+      
+      // Get paginated results
+      const resultsQuery = conditions.length > 0
+        ? query.where(and(...conditions))
+        : query;
+      
+      const results = await resultsQuery
+        .orderBy(desc(shipmentCertificates.bookingDate))
+        .limit(limitNum)
+        .offset(offset)
+        .execute();
+      
+      res.json({
+        data: results.map(r => ({
+          ...r.shipment,
+          policy: r.policy
+        })),
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching shipments:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch shipments" });
+    }
+  });
+
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
