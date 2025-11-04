@@ -105,6 +105,12 @@ export default function Policies() {
                   Policies
                 </Button>
               </Link>
+              <Link href="/shipments">
+                <Button variant="ghost" data-testid="link-shipments">
+                  <Ship className="w-4 h-4 mr-2" />
+                  Shipments
+                </Button>
+              </Link>
             </nav>
           </div>
           

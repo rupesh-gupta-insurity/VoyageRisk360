@@ -268,6 +268,12 @@ export default function Dashboard() {
                 Policies
               </Button>
             </Link>
+            <Link href="/shipments">
+              <Button variant="ghost" size="sm" data-testid="link-shipments">
+                <Ship className="w-4 h-4 mr-2" />
+                Shipments
+              </Button>
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">
