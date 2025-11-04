@@ -20,10 +20,10 @@ import type { Policy } from '@shared/schema';
 
 export default function Policies() {
   const [filters, setFilters] = useState({
-    year: '',
-    status: '',
-    type: '',
-    insurer: '',
+    year: 'all',
+    status: 'all',
+    type: 'all',
+    insurer: 'all',
     search: '',
   });
   const [page, setPage] = useState(1);
@@ -38,7 +38,9 @@ export default function Policies() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
-        ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== '')),
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([, v]) => v !== '' && v !== 'all')
+        ),
       });
       const response = await fetch(`/api/policies?${params}`);
       if (!response.ok) throw new Error('Failed to fetch policies');
@@ -150,7 +152,7 @@ export default function Policies() {
                 <SelectValue placeholder="All Years" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Years</SelectItem>
+                <SelectItem value="all">All Years</SelectItem>
                 <SelectItem value="2024">2024</SelectItem>
                 <SelectItem value="2023">2023</SelectItem>
                 <SelectItem value="2022">2022</SelectItem>
@@ -170,7 +172,7 @@ export default function Policies() {
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="Active">Active</SelectItem>
                 <SelectItem value="Expired">Expired</SelectItem>
                 <SelectItem value="Cancelled">Cancelled</SelectItem>
@@ -188,7 +190,7 @@ export default function Policies() {
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Types</SelectItem>
+                <SelectItem value="all">All Types</SelectItem>
                 <SelectItem value="Marine Cargo - ICC(A)">Cargo ICC(A)</SelectItem>
                 <SelectItem value="Marine Cargo - ICC(B)">Cargo ICC(B)</SelectItem>
                 <SelectItem value="Marine Cargo - ICC(C)">Cargo ICC(C)</SelectItem>
@@ -202,7 +204,7 @@ export default function Policies() {
             <Button
               variant="outline"
               onClick={() => {
-                setFilters({ year: '', status: '', type: '', insurer: '', search: '' });
+                setFilters({ year: 'all', status: 'all', type: 'all', insurer: 'all', search: '' });
                 setPage(1);
               }}
               data-testid="button-clear-filters"
