@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { Ship, FileText, Search, Filter } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
+import PolicyDetailModal from '@/components/PolicyDetailModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,6 +29,7 @@ export default function Policies() {
   });
   const [page, setPage] = useState(1);
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
+  const [showPolicyDetail, setShowPolicyDetail] = useState(false);
 
   const { data, isLoading } = useQuery<{
     data: Policy[];
@@ -243,7 +245,10 @@ export default function Policies() {
                     <TableRow
                       key={policy.id}
                       className="cursor-pointer hover-elevate"
-                      onClick={() => setSelectedPolicy(policy)}
+                      onClick={() => {
+                        setSelectedPolicy(policy);
+                        setShowPolicyDetail(true);
+                      }}
                       data-testid={`row-policy-${policy.id}`}
                     >
                       <TableCell className="font-medium">{policy.policyNo}</TableCell>
@@ -296,6 +301,12 @@ export default function Policies() {
           )}
         </Card>
       </main>
+
+      <PolicyDetailModal
+        policy={selectedPolicy}
+        open={showPolicyDetail}
+        onOpenChange={setShowPolicyDetail}
+      />
     </div>
   );
 }

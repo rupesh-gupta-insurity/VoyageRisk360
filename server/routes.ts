@@ -4,8 +4,8 @@ import { calculateRouteRisk } from "./riskEngine";
 import { searchLocation, getRouteEndpoints } from "./services/geocodingService";
 import { z } from "zod";
 import { db } from "./db";
-import { policies } from "@shared/schema";
-import { eq, and, like, or, sql } from "drizzle-orm";
+import { policies, shipmentCertificates, insertShipmentCertificateSchema } from "@shared/schema";
+import { eq, and, like, or, sql, desc } from "drizzle-orm";
 
 // Simple schema for risk calculation request
 const riskCalculationSchema = z.object({
@@ -159,6 +159,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching policy:", error);
       res.status(500).json({ message: error.message || "Failed to fetch policy" });
+    }
+  });
+
+  // Get all shipments for a policy
+  app.get('/api/policies/:policyId/shipments', async (req, res) => {
+    try {
+      const { policyId } = req.params;
+      const { status, search, page = '1', limit = '10' } = req.query;
+      
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const offset = (pageNum - 1) * limitNum;
+      
+      // Build where conditions
+      const conditions = [eq(shipmentCertificates.policyId, policyId)];
+      
+      if (status) {
+        conditions.push(eq(shipmentCertificates.status, status as string));
+      }
+      
+      if (search) {
+        const searchTerm = `%${search}%`;
+        conditions.push(
+          or(
+            like(shipmentCertificates.certificateNumber, searchTerm),
+            like(shipmentCertificates.sourcePort, searchTerm),
+            like(shipmentCertificates.destinationPort, searchTerm),
+            like(shipmentCertificates.commodity, searchTerm),
+            like(shipmentCertificates.vesselName, searchTerm)
+          )
+        );
+      }
+      
+      // Get total count
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(shipmentCertificates)
+        .where(and(...conditions));
+      
+      const total = Number(countResult[0]?.count || 0);
+      
+      // Get paginated results
+      const results = await db
+        .select()
+        .from(shipmentCertificates)
+        .where(and(...conditions))
+        .orderBy(desc(shipmentCertificates.bookingDate))
+        .limit(limitNum)
+        .offset(offset);
+      
+      res.json({
+        data: results,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching shipments:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch shipments" });
+    }
+  });
+
+  // Create new shipment
+  app.post('/api/policies/:policyId/shipments', async (req, res) => {
+    try {
+      const { policyId } = req.params;
+      
+      // Verify policy exists
+      const policyCheck = await db
+        .select()
+        .from(policies)
+        .where(eq(policies.id, policyId))
+        .limit(1);
+      
+      if (policyCheck.length === 0) {
+        return res.status(404).json({ message: 'Policy not found' });
+      }
+      
+      const validated = insertShipmentCertificateSchema.parse({
+        ...req.body,
+        policyId,
+      });
+      
+      const result = await db
+        .insert(shipmentCertificates)
+        .values(validated)
+        .returning();
+      
+      res.status(201).json(result[0]);
+    } catch (error: any) {
+      console.error("Error creating shipment:", error);
+      res.status(400).json({ message: error.message || "Failed to create shipment" });
+    }
+  });
+
+  // Get single shipment by ID
+  app.get('/api/shipments/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db
+        .select()
+        .from(shipmentCertificates)
+        .where(eq(shipmentCertificates.id, id))
+        .limit(1);
+      
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      res.json(result[0]);
+    } catch (error: any) {
+      console.error("Error fetching shipment:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch shipment" });
+    }
+  });
+
+  // Update shipment
+  app.patch('/api/shipments/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db
+        .update(shipmentCertificates)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(shipmentCertificates.id, id))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      res.json(result[0]);
+    } catch (error: any) {
+      console.error("Error updating shipment:", error);
+      res.status(400).json({ message: error.message || "Failed to update shipment" });
+    }
+  });
+
+  // Delete shipment
+  app.delete('/api/shipments/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db
+        .delete(shipmentCertificates)
+        .where(eq(shipmentCertificates.id, id))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Shipment not found' });
+      }
+      
+      res.json({ message: 'Shipment deleted successfully' });
+    } catch (error: any) {
+      console.error("Error deleting shipment:", error);
+      res.status(500).json({ message: error.message || "Failed to delete shipment" });
     }
   });
 
