@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import { calculateRouteRisk } from "./riskEngine";
 import { searchLocation, getRouteEndpoints } from "./services/geocodingService";
 import { z } from "zod";
+import { db } from "./db";
+import { policies } from "@shared/schema";
+import { eq, and, like, or, sql } from "drizzle-orm";
 
 // Simple schema for risk calculation request
 const riskCalculationSchema = z.object({
@@ -63,6 +66,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error finding route endpoints:", error);
       res.status(500).json({ message: error.message || "Failed to find route endpoints" });
+    }
+  });
+
+  // Get all policies with optional filters
+  app.get('/api/policies', async (req, res) => {
+    try {
+      const { year, status, type, insurer, search, page = '1', limit = '10' } = req.query;
+      
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const offset = (pageNum - 1) * limitNum;
+      
+      // Build where conditions
+      const conditions = [];
+      
+      if (year) {
+        conditions.push(eq(policies.underwritingYear, parseInt(year as string)));
+      }
+      
+      if (status) {
+        conditions.push(eq(policies.status, status as string));
+      }
+      
+      if (type) {
+        conditions.push(eq(policies.policyType, type as string));
+      }
+      
+      if (insurer) {
+        conditions.push(eq(policies.insurer, insurer as string));
+      }
+      
+      if (search) {
+        const searchTerm = `%${search}%`;
+        conditions.push(
+          or(
+            like(policies.policyNo, searchTerm),
+            like(policies.policyName, searchTerm),
+            like(policies.assured, searchTerm)
+          )
+        );
+      }
+      
+      // Get total count
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(policies)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+      
+      const total = Number(countResult[0]?.count || 0);
+      
+      // Get paginated results
+      const results = await db
+        .select()
+        .from(policies)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(sql`${policies.underwritingYear} DESC, ${policies.policyNo} DESC`)
+        .limit(limitNum)
+        .offset(offset);
+      
+      res.json({
+        data: results,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching policies:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch policies" });
+    }
+  });
+  
+  // Get single policy by ID
+  app.get('/api/policies/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db
+        .select()
+        .from(policies)
+        .where(eq(policies.id, id))
+        .limit(1);
+      
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Policy not found' });
+      }
+      
+      res.json(result[0]);
+    } catch (error: any) {
+      console.error("Error fetching policy:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch policy" });
     }
   });
 
