@@ -12,6 +12,25 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### November 4, 2025
+- **📦 Shipment Certificates Global View**:
+  - **Dedicated Shipments page** - Browse all 192 shipments across 50 policies in one place
+  - **Comprehensive filtering** - Filter by status, insurer, source/destination port, commodity, vessel name, date range, and full-text search
+  - **Advanced filter panel** - Collapsible panel with 8+ filter criteria for precise searching
+  - **Policy integration** - Each shipment links back to its parent policy for easy navigation
+  - **Pagination** - Shows 50 shipments per page with total count
+  - **Navigation** - Added Shipments link to all page headers (Dashboard, Policies, Shipments)
+- **Implementation Details**:
+  - Created `/api/shipments` endpoint with comprehensive filtering (status, ports, commodity, vessel, dates, insurer, search)
+  - Built `client/src/pages/Shipments.tsx` with filterable table and advanced filter panel
+  - Added route `/shipments` to App.tsx
+  - Backend joins shipments with policies to enable insurer filtering and display policy info
+  - Table displays: certificate number, policy, route, commodity, vessel, dates, insured amount, status
+- **Testing**:
+  - End-to-end shipment filtering working across all criteria
+  - Policy links navigation verified
+  - Filter combinations tested successfully
+
 ### October 26, 2025
 - **🌐 Real Maritime API Integration**:
   - **Open-Meteo Marine Weather API** - Real-time wave heights, sea surface temperature, ocean currents
