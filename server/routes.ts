@@ -539,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         : query;
       
       const results = await resultsQuery
-        .orderBy(desc(claims.reportedDate))
+        .orderBy(desc(claims.incidentDate))
         .limit(limitNum)
         .offset(offset)
         .execute();
@@ -579,7 +579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(claims)
         .leftJoin(shipmentCertificates, eq(claims.shipmentId, shipmentCertificates.id))
         .where(eq(claims.policyId, policyId))
-        .orderBy(desc(claims.reportedDate))
+        .orderBy(desc(claims.incidentDate))
         .execute();
       
       res.json(results.map(r => ({
@@ -601,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(claims)
         .where(eq(claims.shipmentId, shipmentId))
-        .orderBy(desc(claims.reportedDate))
+        .orderBy(desc(claims.incidentDate))
         .execute();
       
       res.json(results);

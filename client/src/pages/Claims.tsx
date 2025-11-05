@@ -102,21 +102,25 @@ export default function Claims() {
     maxAmount: '',
   });
 
-  const queryParams = new URLSearchParams({
-    page: page.toString(),
-    limit: '50',
-    ...(filters.search && { search: filters.search }),
-    ...(filters.status && { status: filters.status }),
-    ...(filters.lossType && { lossType: filters.lossType }),
-    ...(filters.insurer && { insurer: filters.insurer }),
-    ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
-    ...(filters.dateTo && { dateTo: filters.dateTo }),
-    ...(filters.minAmount && { minAmount: filters.minAmount }),
-    ...(filters.maxAmount && { maxAmount: filters.maxAmount }),
-  });
-
   const { data, isLoading } = useQuery<ClaimsResponse>({
-    queryKey: ['/api/claims', queryParams.toString()],
+    queryKey: ['/api/claims', page, filters],
+    queryFn: async () => {
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: '50',
+        ...(filters.search && { search: filters.search }),
+        ...(filters.status && { status: filters.status }),
+        ...(filters.lossType && { lossType: filters.lossType }),
+        ...(filters.insurer && { insurer: filters.insurer }),
+        ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
+        ...(filters.dateTo && { dateTo: filters.dateTo }),
+        ...(filters.minAmount && { minAmount: filters.minAmount }),
+        ...(filters.maxAmount && { maxAmount: filters.maxAmount }),
+      });
+      const response = await fetch(`/api/claims?${queryParams.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch claims');
+      return response.json();
+    },
   });
 
   const activeFilterCount = Object.values(filters).filter(v => v !== '').length;
