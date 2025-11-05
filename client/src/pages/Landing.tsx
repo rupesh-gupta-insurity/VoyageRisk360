@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { 
   Ship, 
@@ -19,8 +18,13 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ArrowUp
+  ArrowUp,
+  Cloud,
+  Anchor,
+  Navigation,
+  Shield
 } from 'lucide-react';
+import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
 
 interface PlatformStats {
@@ -449,49 +453,197 @@ export default function Landing() {
                 )}
 
                 {calculatedRisk && !isCalculating && (
-                  <div className="space-y-4">
+                  <div className="space-y-6 animate-in fade-in duration-500">
                     <div className="text-center py-4">
                       <div className={`text-5xl font-bold ${getRiskColor(calculatedRisk.overall)} mb-2`} data-testid="risk-overall-score">
-                        {calculatedRisk.overall}
+                        <AnimatedCounter value={calculatedRisk.overall} />
                       </div>
                       <div className="text-lg font-medium">{getRiskLabel(calculatedRisk.overall)}</div>
+                      <p className="text-sm text-muted-foreground mt-1">Overall Risk Score</p>
                     </div>
 
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Weather Risk</span>
-                          <span className="text-sm text-muted-foreground">{calculatedRisk.weather}%</span>
+                    {/* Radar Chart */}
+                    <div className="bg-muted/30 rounded-lg p-6">
+                      <h4 className="text-sm font-medium text-center mb-4">Risk Factor Analysis</h4>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <RadarChart data={[
+                          { factor: 'Weather', value: calculatedRisk.weather },
+                          { factor: 'Piracy', value: calculatedRisk.piracy },
+                          { factor: 'Traffic', value: calculatedRisk.traffic },
+                          { factor: 'Claims', value: calculatedRisk.claims },
+                        ]}>
+                          <PolarGrid stroke="hsl(var(--border))" />
+                          <PolarAngleAxis 
+                            dataKey="factor" 
+                            tick={{ fill: 'hsl(var(--foreground))' }}
+                            style={{ fontSize: '12px' }}
+                          />
+                          <PolarRadiusAxis 
+                            angle={90} 
+                            domain={[0, 100]} 
+                            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                            style={{ fontSize: '10px' }}
+                          />
+                          <Radar 
+                            name="Risk Score" 
+                            dataKey="value" 
+                            stroke="hsl(var(--primary))" 
+                            fill="hsl(var(--primary))" 
+                            fillOpacity={0.5}
+                            animationDuration={1000}
+                          />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Animated Circular Progress Indicators */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
+                        <div className="relative w-20 h-20">
+                          <svg className="w-20 h-20 transform -rotate-90">
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="hsl(var(--muted))"
+                              strokeWidth="6"
+                              fill="none"
+                            />
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="hsl(var(--primary))"
+                              strokeWidth="6"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 32}`}
+                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - calculatedRisk.weather / 100)}`}
+                              className="transition-all duration-1000 ease-out"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-sm font-bold">
+                              <AnimatedCounter value={calculatedRisk.weather} />%
+                            </span>
+                          </div>
                         </div>
-                        <Progress value={calculatedRisk.weather} className="h-2" />
+                        <div className="flex items-center gap-2">
+                          <Cloud className="w-4 h-4 text-primary" />
+                          <span className="text-xs font-medium">Weather</span>
+                        </div>
                       </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Piracy Risk</span>
-                          <span className="text-sm text-muted-foreground">{calculatedRisk.piracy}%</span>
+                      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
+                        <div className="relative w-20 h-20">
+                          <svg className="w-20 h-20 transform -rotate-90">
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="hsl(var(--muted))"
+                              strokeWidth="6"
+                              fill="none"
+                            />
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="hsl(var(--destructive))"
+                              strokeWidth="6"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 32}`}
+                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - calculatedRisk.piracy / 100)}`}
+                              className="transition-all duration-1000 ease-out"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-sm font-bold">
+                              <AnimatedCounter value={calculatedRisk.piracy} />%
+                            </span>
+                          </div>
                         </div>
-                        <Progress value={calculatedRisk.piracy} className="h-2" />
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4 text-destructive" />
+                          <span className="text-xs font-medium">Piracy</span>
+                        </div>
                       </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Traffic Density</span>
-                          <span className="text-sm text-muted-foreground">{calculatedRisk.traffic}%</span>
+                      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
+                        <div className="relative w-20 h-20">
+                          <svg className="w-20 h-20 transform -rotate-90">
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="hsl(var(--muted))"
+                              strokeWidth="6"
+                              fill="none"
+                            />
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="hsl(var(--chart-3))"
+                              strokeWidth="6"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 32}`}
+                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - calculatedRisk.traffic / 100)}`}
+                              className="transition-all duration-1000 ease-out"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-sm font-bold">
+                              <AnimatedCounter value={calculatedRisk.traffic} />%
+                            </span>
+                          </div>
                         </div>
-                        <Progress value={calculatedRisk.traffic} className="h-2" />
+                        <div className="flex items-center gap-2">
+                          <Navigation className="w-4 h-4 text-chart-3" />
+                          <span className="text-xs font-medium">Traffic</span>
+                        </div>
                       </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Historical Claims</span>
-                          <span className="text-sm text-muted-foreground">{calculatedRisk.claims}%</span>
+                      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
+                        <div className="relative w-20 h-20">
+                          <svg className="w-20 h-20 transform -rotate-90">
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="hsl(var(--muted))"
+                              strokeWidth="6"
+                              fill="none"
+                            />
+                            <circle
+                              cx="40"
+                              cy="40"
+                              r="32"
+                              stroke="hsl(var(--chart-4))"
+                              strokeWidth="6"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 32}`}
+                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - calculatedRisk.claims / 100)}`}
+                              className="transition-all duration-1000 ease-out"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-sm font-bold">
+                              <AnimatedCounter value={calculatedRisk.claims} />%
+                            </span>
+                          </div>
                         </div>
-                        <Progress value={calculatedRisk.claims} className="h-2" />
+                        <div className="flex items-center gap-2">
+                          <Anchor className="w-4 h-4 text-chart-4" />
+                          <span className="text-xs font-medium">Claims</span>
+                        </div>
                       </div>
                     </div>
 
-                    <Button className="w-full" asChild>
+                    <Button className="w-full" asChild data-testid="button-create-custom-route">
                       <a href="/dashboard">Create Custom Route Analysis</a>
                     </Button>
                   </div>
