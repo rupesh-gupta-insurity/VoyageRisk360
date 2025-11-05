@@ -312,7 +312,7 @@ export default function Landing() {
             <div className="flex justify-center gap-4 pt-4">
               <Button 
                 size="lg" 
-                variant="outline" 
+                variant="default" 
                 onClick={scrollToStats}
                 data-testid="button-see-live-data"
                 className="group"
@@ -320,7 +320,7 @@ export default function Landing() {
                 See Live Data
                 <ChevronDown className="ml-2 h-4 w-4 group-hover:translate-y-0.5 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" asChild>
+              <Button size="lg" variant="secondary" asChild>
                 <a href="/policies">Explore Demo</a>
               </Button>
             </div>
