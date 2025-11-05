@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Ship, 
   MapPin, 
@@ -25,6 +26,12 @@ import {
   Shield
 } from 'lucide-react';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
+import maritimeMapImg from '@assets/stock_images/maritime_shipping_ro_844ed7b2.jpg';
+import analyticsImg from '@assets/stock_images/business_analytics_d_d445d6ba.jpg';
+import cargoShipImg from '@assets/stock_images/cargo_ship_container_1af81bb0.jpg';
+import policyImg from '@assets/stock_images/insurance_policy_doc_e27d8494.jpg';
+import logisticsImg from '@assets/stock_images/global_logistics_tra_1e7ac8d1.jpg';
+import dataAnalysisImg from '@assets/stock_images/data_analysis_financ_33059e91.jpg';
 
 interface PlatformStats {
   totalPolicies: number;
@@ -95,6 +102,45 @@ const POPULAR_ROUTES = [
   },
 ];
 
+const WALKTHROUGH_STEPS = [
+  {
+    title: 'Interactive Route Drawing',
+    description: 'Draw custom maritime routes on an interactive map. Add waypoints, visualize multi-layer risk heatmaps, and see real-time risk calculations.',
+    image: maritimeMapImg,
+    icon: MapIcon,
+  },
+  {
+    title: 'Multi-Factor Risk Analysis',
+    description: 'Get comprehensive risk scoring based on weather conditions, piracy zones, traffic density, and historical claims data. All powered by real maritime APIs.',
+    image: analyticsImg,
+    icon: TrendingUp,
+  },
+  {
+    title: 'Live Platform Statistics',
+    description: 'Track 50 active policies, 192 shipments, and 38 claims across global maritime operations. Monitor total insured value and settlement amounts in real-time.',
+    image: cargoShipImg,
+    icon: Activity,
+  },
+  {
+    title: 'Policy Management',
+    description: 'Browse and filter marine insurance policies with advanced search. View coverage details, insured amounts, and linked shipment certificates.',
+    image: policyImg,
+    icon: FileText,
+  },
+  {
+    title: 'Shipment Tracking',
+    description: 'Global view of all 192 shipments with comprehensive filtering by status, ports, commodity, vessel, and date range. Track certificates from loading to discharge.',
+    image: logisticsImg,
+    icon: Package,
+  },
+  {
+    title: 'Claims Dashboard',
+    description: 'Visualize claims with heat maps and analytics. Filter by status, severity, and amount. Monitor settlement progress and claim trends.',
+    image: dataAnalysisImg,
+    icon: AlertTriangle,
+  },
+];
+
 function AnimatedCounter({ value, duration = 2000 }: { value: number; duration?: number }) {
   const [count, setCount] = useState(0);
 
@@ -125,6 +171,8 @@ export default function Landing() {
   const [activeSection, setActiveSection] = useState<string>('');
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [animatedWidths, setAnimatedWidths] = useState({ weather: 0, piracy: 0, traffic: 0, claims: 0 });
+  const [isWalkthroughOpen, setIsWalkthroughOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
