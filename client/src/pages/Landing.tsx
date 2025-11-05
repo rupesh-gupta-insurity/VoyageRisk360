@@ -593,18 +593,6 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section className="container mx-auto px-6 py-16 text-center">
-          <div className="max-w-2xl mx-auto space-y-6">
-            <h3 className="text-3xl font-bold">Ready to Assess Your Routes?</h3>
-            <p className="text-lg text-muted-foreground">
-              Start analyzing maritime voyage risks with real-time data and comprehensive insights
-            </p>
-            <Button size="lg" asChild data-testid="button-start-now">
-              <a href="/dashboard">Start Now - It's Free</a>
-            </Button>
-          </div>
-        </section>
       </main>
 
       <footer className="border-t py-8">
