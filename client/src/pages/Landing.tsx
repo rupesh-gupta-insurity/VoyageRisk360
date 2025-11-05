@@ -16,7 +16,9 @@ import {
   Activity,
   Calculator,
   Map as MapIcon,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
 
@@ -115,6 +117,7 @@ export default function Landing() {
   const [selectedRoute, setSelectedRoute] = useState<string>('');
   const [calculatedRisk, setCalculatedRisk] = useState<RiskScore | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [activityPage, setActivityPage] = useState(0);
 
   const scrollToStats = () => {
     const statsSection = document.getElementById('stats-section');
@@ -440,12 +443,37 @@ export default function Landing() {
         <section className="bg-muted/50 py-16">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-8">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <Activity className="w-6 h-6 text-primary" />
-                  <h3 className="text-2xl font-bold">Live Activity Feed</h3>
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Activity className="w-6 h-6 text-primary" />
+                    <h3 className="text-2xl font-bold">Live Activity Feed</h3>
+                  </div>
+                  <p className="text-muted-foreground">Recent platform activity</p>
                 </div>
-                <p className="text-muted-foreground">Recent claims and shipments across the platform</p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setActivityPage(Math.max(0, activityPage - 1))}
+                    disabled={activityPage === 0}
+                    data-testid="button-activity-prev"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setActivityPage(activityPage + 1)}
+                    disabled={
+                      (!recentClaims || recentClaims.length <= (activityPage + 1) * 3) &&
+                      (!recentShipments || recentShipments.length <= (activityPage + 1) * 3)
+                    }
+                    data-testid="button-activity-next"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
@@ -456,7 +484,7 @@ export default function Landing() {
                     Recent Claims
                   </h4>
                   <div className="space-y-3">
-                    {recentClaims?.slice(0, 5).map((claim, idx) => (
+                    {recentClaims?.slice(activityPage * 3, (activityPage + 1) * 3).map((claim, idx) => (
                       <div key={claim.id || idx} className="flex items-start gap-3 pb-3 border-b last:border-0">
                         <div className="w-2 h-2 rounded-full bg-red-500 mt-2"></div>
                         <div className="flex-1 min-w-0">
@@ -483,7 +511,7 @@ export default function Landing() {
                     Recent Shipments
                   </h4>
                   <div className="space-y-3">
-                    {recentShipments?.slice(0, 5).map((shipment, idx) => (
+                    {recentShipments?.slice(activityPage * 3, (activityPage + 1) * 3).map((shipment, idx) => (
                       <div key={shipment.id || idx} className="flex items-start gap-3 pb-3 border-b last:border-0">
                         <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
                         <div className="flex-1 min-w-0">
