@@ -149,6 +149,11 @@ export default function Shipments() {
                   Shipments
                 </Button>
               </Link>
+              <Link href="/claims">
+                <Button variant="ghost" data-testid="link-claims">
+                  Claims
+                </Button>
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">

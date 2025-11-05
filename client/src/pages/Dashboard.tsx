@@ -274,6 +274,12 @@ export default function Dashboard() {
                 Shipments
               </Button>
             </Link>
+            <Link href="/claims">
+              <Button variant="ghost" size="sm" data-testid="link-claims">
+                <FileText className="w-4 h-4 mr-2" />
+                Claims
+              </Button>
+            </Link>
           </nav>
         </div>
         <div className="flex items-center gap-3">
