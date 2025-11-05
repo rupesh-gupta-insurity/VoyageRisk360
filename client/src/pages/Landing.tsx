@@ -24,7 +24,6 @@ import {
   Navigation,
   Shield
 } from 'lucide-react';
-import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from 'recharts';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
 
 interface PlatformStats {
@@ -125,6 +124,7 @@ export default function Landing() {
   const [activityPage, setActivityPage] = useState(0);
   const [activeSection, setActiveSection] = useState<string>('');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [animatedWidths, setAnimatedWidths] = useState({ weather: 0, piracy: 0, traffic: 0, claims: 0 });
 
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
@@ -197,6 +197,26 @@ export default function Landing() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoute]);
+
+  // Animate bar widths when calculatedRisk changes
+  useEffect(() => {
+    if (calculatedRisk) {
+      // Reset to 0 first
+      setAnimatedWidths({ weather: 0, piracy: 0, traffic: 0, claims: 0 });
+      
+      // Animate to final values after a short delay
+      const timer = setTimeout(() => {
+        setAnimatedWidths({
+          weather: calculatedRisk.weather,
+          piracy: calculatedRisk.piracy,
+          traffic: calculatedRisk.traffic,
+          claims: calculatedRisk.claims,
+        });
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [calculatedRisk]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -462,183 +482,228 @@ export default function Landing() {
                       <p className="text-sm text-muted-foreground mt-1">Overall Risk Score</p>
                     </div>
 
-                    {/* Radar Chart */}
-                    <div className="bg-muted/30 rounded-lg p-6">
-                      <h4 className="text-sm font-medium text-center mb-4">Risk Factor Analysis</h4>
-                      <ResponsiveContainer width="100%" height={280}>
-                        <RadarChart data={[
-                          { factor: 'Weather', value: calculatedRisk.weather },
-                          { factor: 'Piracy', value: calculatedRisk.piracy },
-                          { factor: 'Traffic', value: calculatedRisk.traffic },
-                          { factor: 'Claims', value: calculatedRisk.claims },
-                        ]}>
-                          <PolarGrid stroke="hsl(var(--border))" />
-                          <PolarAngleAxis 
-                            dataKey="factor" 
-                            tick={{ fill: 'hsl(var(--foreground))' }}
-                            style={{ fontSize: '12px' }}
-                          />
-                          <PolarRadiusAxis 
-                            angle={90} 
-                            domain={[0, 100]} 
-                            tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                            style={{ fontSize: '10px' }}
-                          />
-                          <Radar 
-                            name="Risk Score" 
-                            dataKey="value" 
-                            stroke="hsl(var(--primary))" 
-                            fill="hsl(var(--primary))" 
-                            fillOpacity={0.5}
-                            animationDuration={1000}
-                          />
-                        </RadarChart>
-                      </ResponsiveContainer>
+                    {/* Horizontal Bar Chart */}
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-medium text-center">Risk Factor Breakdown</h4>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Cloud className="w-4 h-4 text-primary" />
+                              <span className="text-sm font-medium">Weather Risk</span>
+                            </div>
+                            <span className="text-sm font-bold text-primary">
+                              <AnimatedCounter value={calculatedRisk.weather} />%
+                            </span>
+                          </div>
+                          <div className="h-3 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary transition-all duration-1000 ease-out rounded-full"
+                              style={{ width: `${animatedWidths.weather}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Shield className="w-4 h-4 text-destructive" />
+                              <span className="text-sm font-medium">Piracy Risk</span>
+                            </div>
+                            <span className="text-sm font-bold text-destructive">
+                              <AnimatedCounter value={calculatedRisk.piracy} />%
+                            </span>
+                          </div>
+                          <div className="h-3 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-destructive transition-all duration-1000 ease-out rounded-full"
+                              style={{ width: `${animatedWidths.piracy}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Navigation className="w-4 h-4 text-chart-3" />
+                              <span className="text-sm font-medium">Traffic Density</span>
+                            </div>
+                            <span className="text-sm font-bold text-chart-3">
+                              <AnimatedCounter value={calculatedRisk.traffic} />%
+                            </span>
+                          </div>
+                          <div className="h-3 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-chart-3 transition-all duration-1000 ease-out rounded-full"
+                              style={{ width: `${animatedWidths.traffic}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Anchor className="w-4 h-4 text-chart-4" />
+                              <span className="text-sm font-medium">Historical Claims</span>
+                            </div>
+                            <span className="text-sm font-bold text-chart-4">
+                              <AnimatedCounter value={calculatedRisk.claims} />%
+                            </span>
+                          </div>
+                          <div className="h-3 bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-chart-4 transition-all duration-1000 ease-out rounded-full"
+                              style={{ width: `${animatedWidths.claims}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Animated Circular Progress Indicators */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
-                        <div className="relative w-20 h-20">
-                          <svg className="w-20 h-20 transform -rotate-90">
+                    <div className="grid grid-cols-4 gap-3">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="relative w-16 h-16">
+                          <svg className="w-16 h-16 transform -rotate-90">
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
+                              cx="32"
+                              cy="32"
+                              r="26"
                               stroke="hsl(var(--muted))"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
                             />
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
+                              cx="32"
+                              cy="32"
+                              r="26"
                               stroke="hsl(var(--primary))"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
-                              strokeDasharray={`${2 * Math.PI * 32}`}
-                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - calculatedRisk.weather / 100)}`}
+                              strokeDasharray={`${2 * Math.PI * 26}`}
+                              strokeDashoffset={`${2 * Math.PI * 26 * (1 - calculatedRisk.weather / 100)}`}
                               className="transition-all duration-1000 ease-out"
                               strokeLinecap="round"
                             />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-sm font-bold">
+                            <span className="text-xs font-bold">
                               <AnimatedCounter value={calculatedRisk.weather} />%
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Cloud className="w-4 h-4 text-primary" />
-                          <span className="text-xs font-medium">Weather</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <Cloud className="w-3.5 h-3.5 text-primary" />
+                          <span className="text-[10px] font-medium text-center">Weather</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
-                        <div className="relative w-20 h-20">
-                          <svg className="w-20 h-20 transform -rotate-90">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="relative w-16 h-16">
+                          <svg className="w-16 h-16 transform -rotate-90">
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
+                              cx="32"
+                              cy="32"
+                              r="26"
                               stroke="hsl(var(--muted))"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
                             />
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
+                              cx="32"
+                              cy="32"
+                              r="26"
                               stroke="hsl(var(--destructive))"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
-                              strokeDasharray={`${2 * Math.PI * 32}`}
-                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - calculatedRisk.piracy / 100)}`}
+                              strokeDasharray={`${2 * Math.PI * 26}`}
+                              strokeDashoffset={`${2 * Math.PI * 26 * (1 - calculatedRisk.piracy / 100)}`}
                               className="transition-all duration-1000 ease-out"
                               strokeLinecap="round"
                             />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-sm font-bold">
+                            <span className="text-xs font-bold">
                               <AnimatedCounter value={calculatedRisk.piracy} />%
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4 text-destructive" />
-                          <span className="text-xs font-medium">Piracy</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <Shield className="w-3.5 h-3.5 text-destructive" />
+                          <span className="text-[10px] font-medium text-center">Piracy</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
-                        <div className="relative w-20 h-20">
-                          <svg className="w-20 h-20 transform -rotate-90">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="relative w-16 h-16">
+                          <svg className="w-16 h-16 transform -rotate-90">
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
+                              cx="32"
+                              cy="32"
+                              r="26"
                               stroke="hsl(var(--muted))"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
                             />
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
+                              cx="32"
+                              cy="32"
+                              r="26"
                               stroke="hsl(var(--chart-3))"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
-                              strokeDasharray={`${2 * Math.PI * 32}`}
-                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - calculatedRisk.traffic / 100)}`}
+                              strokeDasharray={`${2 * Math.PI * 26}`}
+                              strokeDashoffset={`${2 * Math.PI * 26 * (1 - calculatedRisk.traffic / 100)}`}
                               className="transition-all duration-1000 ease-out"
                               strokeLinecap="round"
                             />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-sm font-bold">
+                            <span className="text-xs font-bold">
                               <AnimatedCounter value={calculatedRisk.traffic} />%
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Navigation className="w-4 h-4 text-chart-3" />
-                          <span className="text-xs font-medium">Traffic</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <Navigation className="w-3.5 h-3.5 text-chart-3" />
+                          <span className="text-[10px] font-medium text-center">Traffic</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-center gap-3 p-4 rounded-lg bg-muted/30">
-                        <div className="relative w-20 h-20">
-                          <svg className="w-20 h-20 transform -rotate-90">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="relative w-16 h-16">
+                          <svg className="w-16 h-16 transform -rotate-90">
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
+                              cx="32"
+                              cy="32"
+                              r="26"
                               stroke="hsl(var(--muted))"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
                             />
                             <circle
-                              cx="40"
-                              cy="40"
-                              r="32"
+                              cx="32"
+                              cy="32"
+                              r="26"
                               stroke="hsl(var(--chart-4))"
-                              strokeWidth="6"
+                              strokeWidth="5"
                               fill="none"
-                              strokeDasharray={`${2 * Math.PI * 32}`}
-                              strokeDashoffset={`${2 * Math.PI * 32 * (1 - calculatedRisk.claims / 100)}`}
+                              strokeDasharray={`${2 * Math.PI * 26}`}
+                              strokeDashoffset={`${2 * Math.PI * 26 * (1 - calculatedRisk.claims / 100)}`}
                               className="transition-all duration-1000 ease-out"
                               strokeLinecap="round"
                             />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-sm font-bold">
+                            <span className="text-xs font-bold">
                               <AnimatedCounter value={calculatedRisk.claims} />%
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Anchor className="w-4 h-4 text-chart-4" />
-                          <span className="text-xs font-medium">Claims</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <Anchor className="w-3.5 h-3.5 text-chart-4" />
+                          <span className="text-[10px] font-medium text-center">Claims</span>
                         </div>
                       </div>
                     </div>
