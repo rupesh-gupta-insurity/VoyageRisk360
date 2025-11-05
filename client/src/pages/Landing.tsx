@@ -23,7 +23,8 @@ import {
   Cloud,
   Anchor,
   Navigation,
-  Shield
+  Shield,
+  Rocket
 } from 'lucide-react';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
 import maritimeMapImg from '@assets/stock_images/maritime_shipping_ro_844ed7b2.jpg';
@@ -344,8 +345,17 @@ export default function Landing() {
             <Ship className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">VoyageRisk360</h1>
           </div>
-          <Button variant="outline" asChild data-testid="button-get-started-header">
-            <a href="/dashboard">Launch App</a>
+          <Button 
+            variant="default" 
+            size="lg"
+            asChild 
+            className="rounded-full px-6 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group"
+            data-testid="button-get-started-header"
+          >
+            <a href="/dashboard" className="flex items-center gap-2">
+              <span>Launch App</span>
+              <Rocket className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
+            </a>
           </Button>
         </div>
       </header>
