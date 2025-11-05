@@ -193,7 +193,8 @@ export default function Landing() {
     if (selectedRoute) {
       handleCalculateRisk();
     }
-  }, [selectedRoute, handleCalculateRisk]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoute]);
 
   useEffect(() => {
     const handleScroll = () => {
