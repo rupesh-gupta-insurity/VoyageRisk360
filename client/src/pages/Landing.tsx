@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -159,7 +159,7 @@ export default function Landing() {
     },
   });
 
-  const handleCalculateRisk = async () => {
+  const handleCalculateRisk = useCallback(async () => {
     if (!selectedRoute) return;
 
     const route = POPULAR_ROUTES.find(r => r.id === selectedRoute);
@@ -191,13 +191,13 @@ export default function Landing() {
     } finally {
       setIsCalculating(false);
     }
-  };
+  }, [selectedRoute]);
 
   useEffect(() => {
     if (selectedRoute) {
       handleCalculateRisk();
     }
-  }, [selectedRoute]);
+  }, [selectedRoute, handleCalculateRisk]);
 
   const getRiskColor = (risk: number) => {
     if (risk < 30) return 'text-green-600 dark:text-green-400';
