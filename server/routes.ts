@@ -4,8 +4,8 @@ import { calculateRouteRisk } from "./riskEngine";
 import { searchLocation, getRouteEndpoints } from "./services/geocodingService";
 import { z } from "zod";
 import { db } from "./db";
-import { policies, shipmentCertificates, insertShipmentCertificateSchema } from "@shared/schema";
-import { eq, and, like, or, sql, desc } from "drizzle-orm";
+import { policies, shipmentCertificates, claims, insertShipmentCertificateSchema, insertClaimSchema } from "@shared/schema";
+import { eq, and, like, or, sql, desc, gte, lte } from "drizzle-orm";
 
 // Simple schema for risk calculation request
 const riskCalculationSchema = z.object({
@@ -440,6 +440,275 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching shipments:", error);
       res.status(500).json({ message: error.message || "Failed to fetch shipments" });
+    }
+  });
+
+  // Get all claims (global view)
+  app.get('/api/claims', async (req, res) => {
+    try {
+      const {
+        status,
+        lossType,
+        insurer,
+        dateFrom,
+        dateTo,
+        minAmount,
+        maxAmount,
+        search,
+        page = '1',
+        limit = '50'
+      } = req.query;
+      
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const offset = (pageNum - 1) * limitNum;
+      
+      // Build where conditions
+      const conditions = [];
+      
+      if (status) {
+        conditions.push(eq(claims.status, status as string));
+      }
+      
+      if (lossType) {
+        conditions.push(eq(claims.lossType, lossType as string));
+      }
+      
+      if (dateFrom) {
+        conditions.push(gte(claims.incidentDate, new Date(dateFrom as string)));
+      }
+      
+      if (dateTo) {
+        conditions.push(lte(claims.incidentDate, new Date(dateTo as string)));
+      }
+      
+      if (minAmount) {
+        conditions.push(sql`CAST(${claims.claimedAmount} AS DECIMAL) >= ${parseFloat(minAmount as string)}`);
+      }
+      
+      if (maxAmount) {
+        conditions.push(sql`CAST(${claims.claimedAmount} AS DECIMAL) <= ${parseFloat(maxAmount as string)}`);
+      }
+      
+      if (search) {
+        const searchTerm = `%${search}%`;
+        conditions.push(
+          or(
+            like(claims.claimNumber, searchTerm),
+            like(claims.incidentDescription, searchTerm),
+            like(claims.claimant, searchTerm),
+            like(claims.affectedCommodity, searchTerm),
+            like(claims.vesselName, searchTerm)
+          )
+        );
+      }
+      
+      // Join with policies and shipments
+      let query = db
+        .select({
+          claim: claims,
+          policy: {
+            id: policies.id,
+            policyNo: policies.policyNo,
+            insurer: policies.insurer,
+          },
+          shipment: {
+            id: shipmentCertificates.id,
+            certificateNumber: shipmentCertificates.certificateNumber,
+          }
+        })
+        .from(claims)
+        .leftJoin(policies, eq(claims.policyId, policies.id))
+        .leftJoin(shipmentCertificates, eq(claims.shipmentId, shipmentCertificates.id));
+      
+      if (insurer) {
+        conditions.push(eq(policies.insurer, insurer as string));
+      }
+      
+      // Get total count
+      const countQuery = conditions.length > 0 
+        ? query.where(and(...conditions))
+        : query;
+      
+      const countResult = await countQuery.execute();
+      const total = countResult.length;
+      
+      // Get paginated results
+      const resultsQuery = conditions.length > 0
+        ? query.where(and(...conditions))
+        : query;
+      
+      const results = await resultsQuery
+        .orderBy(desc(claims.reportedDate))
+        .limit(limitNum)
+        .offset(offset)
+        .execute();
+      
+      res.json({
+        data: results.map(r => ({
+          ...r.claim,
+          policy: r.policy,
+          shipment: r.shipment
+        })),
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      });
+    } catch (error: any) {
+      console.error("Error fetching claims:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch claims" });
+    }
+  });
+
+  // Get claims for a specific policy
+  app.get('/api/policies/:policyId/claims', async (req, res) => {
+    try {
+      const { policyId } = req.params;
+      
+      const results = await db
+        .select({
+          claim: claims,
+          shipment: {
+            id: shipmentCertificates.id,
+            certificateNumber: shipmentCertificates.certificateNumber,
+          }
+        })
+        .from(claims)
+        .leftJoin(shipmentCertificates, eq(claims.shipmentId, shipmentCertificates.id))
+        .where(eq(claims.policyId, policyId))
+        .orderBy(desc(claims.reportedDate))
+        .execute();
+      
+      res.json(results.map(r => ({
+        ...r.claim,
+        shipment: r.shipment
+      })));
+    } catch (error: any) {
+      console.error("Error fetching policy claims:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch policy claims" });
+    }
+  });
+
+  // Get claims for a specific shipment
+  app.get('/api/shipments/:shipmentId/claims', async (req, res) => {
+    try {
+      const { shipmentId } = req.params;
+      
+      const results = await db
+        .select()
+        .from(claims)
+        .where(eq(claims.shipmentId, shipmentId))
+        .orderBy(desc(claims.reportedDate))
+        .execute();
+      
+      res.json(results);
+    } catch (error: any) {
+      console.error("Error fetching shipment claims:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch shipment claims" });
+    }
+  });
+
+  // Create new claim
+  app.post('/api/claims', async (req, res) => {
+    try {
+      const validated = insertClaimSchema.parse(req.body);
+      
+      const result = await db
+        .insert(claims)
+        .values(validated)
+        .returning();
+      
+      res.status(201).json(result[0]);
+    } catch (error: any) {
+      console.error("Error creating claim:", error);
+      res.status(400).json({ message: error.message || "Failed to create claim" });
+    }
+  });
+
+  // Get single claim
+  app.get('/api/claims/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db
+        .select({
+          claim: claims,
+          policy: {
+            id: policies.id,
+            policyNo: policies.policyNo,
+            insurer: policies.insurer,
+          },
+          shipment: {
+            id: shipmentCertificates.id,
+            certificateNumber: shipmentCertificates.certificateNumber,
+            sourcePort: shipmentCertificates.sourcePort,
+            destinationPort: shipmentCertificates.destinationPort,
+          }
+        })
+        .from(claims)
+        .leftJoin(policies, eq(claims.policyId, policies.id))
+        .leftJoin(shipmentCertificates, eq(claims.shipmentId, shipmentCertificates.id))
+        .where(eq(claims.id, id))
+        .limit(1);
+      
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Claim not found' });
+      }
+      
+      res.json({
+        ...result[0].claim,
+        policy: result[0].policy,
+        shipment: result[0].shipment
+      });
+    } catch (error: any) {
+      console.error("Error fetching claim:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch claim" });
+    }
+  });
+
+  // Update claim
+  app.patch('/api/claims/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db
+        .update(claims)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(claims.id, id))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Claim not found' });
+      }
+      
+      res.json(result[0]);
+    } catch (error: any) {
+      console.error("Error updating claim:", error);
+      res.status(400).json({ message: error.message || "Failed to update claim" });
+    }
+  });
+
+  // Delete claim
+  app.delete('/api/claims/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const result = await db
+        .delete(claims)
+        .where(eq(claims.id, id))
+        .returning();
+      
+      if (result.length === 0) {
+        return res.status(404).json({ message: 'Claim not found' });
+      }
+      
+      res.json({ message: 'Claim deleted successfully' });
+    } catch (error: any) {
+      console.error("Error deleting claim:", error);
+      res.status(500).json({ message: error.message || "Failed to delete claim" });
     }
   });
 
