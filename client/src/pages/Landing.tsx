@@ -5,12 +5,6 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { 
   Ship, 
   MapPin, 
@@ -24,8 +18,7 @@ import {
   Map as MapIcon,
   ChevronDown,
   ChevronLeft,
-  ChevronRight,
-  Menu
+  ChevronRight
 } from 'lucide-react';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
 
@@ -125,6 +118,7 @@ export default function Landing() {
   const [calculatedRisk, setCalculatedRisk] = useState<RiskScore | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [activityPage, setActivityPage] = useState(0);
+  const [showMiniNav, setShowMiniNav] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
@@ -199,6 +193,16 @@ export default function Landing() {
     }
   }, [selectedRoute, handleCalculateRisk]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show mini-nav after scrolling past 400px (roughly past hero section)
+      setShowMiniNav(window.scrollY > 400);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const getRiskColor = (risk: number) => {
     if (risk < 30) return 'text-green-600 dark:text-green-400';
     if (risk < 60) return 'text-yellow-600 dark:text-yellow-400';
@@ -252,39 +256,57 @@ export default function Landing() {
             <Ship className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">VoyageRisk360</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" data-testid="button-sections-menu">
-                  <Menu className="h-4 w-4 mr-2" />
-                  Sections
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => scrollToSection('stats-section')} data-testid="menu-stats">
-                  <Activity className="h-4 w-4 mr-2" />
-                  Live Stats
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => scrollToSection('calculator-section')} data-testid="menu-calculator">
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Risk Calculator
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => scrollToSection('activity-section')} data-testid="menu-activity">
-                  <Ship className="h-4 w-4 mr-2" />
-                  Activity Feed
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => scrollToSection('features-section')} data-testid="menu-features">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Platform Features
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" asChild data-testid="button-get-started-header">
-              <a href="/dashboard">Launch App</a>
-            </Button>
-          </div>
+          <Button variant="outline" asChild data-testid="button-get-started-header">
+            <a href="/dashboard">Launch App</a>
+          </Button>
         </div>
       </header>
+
+      {/* Mini Navigation - appears after scroll */}
+      {showMiniNav && (
+        <nav className="sticky top-[73px] z-40 border-b bg-background/95 backdrop-blur animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="container mx-auto px-6">
+            <div className="flex items-center justify-center gap-1 py-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => scrollToSection('stats-section')}
+                data-testid="nav-stats"
+                className="text-sm"
+              >
+                Stats
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => scrollToSection('calculator-section')}
+                data-testid="nav-calculator"
+                className="text-sm"
+              >
+                Calculator
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => scrollToSection('activity-section')}
+                data-testid="nav-activity"
+                className="text-sm"
+              >
+                Activity
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => scrollToSection('features-section')}
+                data-testid="nav-features"
+                className="text-sm"
+              >
+                Features
+              </Button>
+            </div>
+          </div>
+        </nav>
+      )}
 
       <main className="flex-1">
         {/* Hero Section */}
