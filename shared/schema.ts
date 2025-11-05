@@ -161,6 +161,72 @@ export const shipmentCertificates = pgTable("shipment_certificates", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const claims = pgTable("claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: varchar("policy_id").notNull().references(() => policies.id, { onDelete: 'cascade' }),
+  shipmentId: varchar("shipment_id").notNull().references(() => shipmentCertificates.id, { onDelete: 'cascade' }),
+  
+  // Claim identification
+  claimNumber: varchar("claim_number").notNull().unique(),
+  status: varchar("status").notNull().default('Reported'),
+  
+  // Dates
+  incidentDate: timestamp("incident_date").notNull(),
+  reportedDate: timestamp("reported_date").notNull(),
+  closedDate: timestamp("closed_date"),
+  
+  // Incident details
+  lossType: varchar("loss_type").notNull(),
+  incidentLocation: varchar("incident_location").notNull(),
+  incidentLatitude: decimal("incident_latitude", { precision: 10, scale: 8 }),
+  incidentLongitude: decimal("incident_longitude", { precision: 11, scale: 8 }),
+  incidentDescription: varchar("incident_description", { length: 2000 }).notNull(),
+  rootCause: varchar("root_cause"),
+  
+  // Parties
+  claimant: varchar("claimant").notNull(),
+  claimantContact: varchar("claimant_contact"),
+  reporter: varchar("reporter").notNull(),
+  reporterRole: varchar("reporter_role"),
+  adjuster: varchar("adjuster"),
+  adjusterCompany: varchar("adjuster_company"),
+  carrier: varchar("carrier"),
+  
+  // Cargo impact
+  affectedCommodity: varchar("affected_commodity").notNull(),
+  affectedQuantity: decimal("affected_quantity", { precision: 12, scale: 2 }),
+  quantityUnit: varchar("quantity_unit"),
+  containerNumbers: jsonb("container_numbers"),
+  
+  // Vessel information (at time of incident)
+  vesselName: varchar("vessel_name").notNull(),
+  vesselImo: varchar("vessel_imo"),
+  voyageNumber: varchar("voyage_number"),
+  
+  // Weather conditions (if relevant)
+  weatherConditions: varchar("weather_conditions"),
+  seaState: varchar("sea_state"),
+  
+  // Financial
+  currency: varchar("currency").notNull().default('USD'),
+  claimedAmount: decimal("claimed_amount", { precision: 15, scale: 2 }).notNull(),
+  assessedLoss: decimal("assessed_loss", { precision: 15, scale: 2 }),
+  settledAmount: decimal("settled_amount", { precision: 15, scale: 2 }),
+  deductibleApplied: decimal("deductible_applied", { precision: 15, scale: 2 }),
+  
+  // Documentation
+  surveyReportRef: varchar("survey_report_ref"),
+  policeReportRef: varchar("police_report_ref"),
+  documentationLinks: jsonb("documentation_links"),
+  
+  // Additional information
+  additionalNotes: varchar("additional_notes", { length: 2000 }),
+  internalNotes: varchar("internal_notes", { length: 2000 }),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Zod schemas
 export const upsertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -214,6 +280,12 @@ export const insertShipmentCertificateSchema = createInsertSchema(shipmentCertif
   updatedAt: true,
 });
 
+export const insertClaimSchema = createInsertSchema(claims).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -223,9 +295,11 @@ export type AlertConfig = typeof alertConfigs.$inferSelect;
 export type Policy = typeof policies.$inferSelect;
 export type PolicyRouteLink = typeof policyRouteLinks.$inferSelect;
 export type ShipmentCertificate = typeof shipmentCertificates.$inferSelect;
+export type Claim = typeof claims.$inferSelect;
 export type CreateRouteRequest = z.infer<typeof createRouteRequestSchema>;
 export type InsertRoute = z.infer<typeof insertRouteSchema>;
 export type InsertAlertConfig = z.infer<typeof insertAlertConfigSchema>;
 export type InsertPolicy = z.infer<typeof insertPolicySchema>;
 export type InsertPolicyRouteLink = z.infer<typeof insertPolicyRouteLinkSchema>;
 export type InsertShipmentCertificate = z.infer<typeof insertShipmentCertificateSchema>;
+export type InsertClaim = z.infer<typeof insertClaimSchema>;
