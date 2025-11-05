@@ -119,12 +119,14 @@ export default function Landing() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [activityPage, setActivityPage] = useState(0);
 
-  const scrollToStats = () => {
-    const statsSection = document.getElementById('stats-section');
-    if (statsSection) {
-      statsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
+
+  const scrollToStats = () => scrollToSection('stats-section');
 
   const { data: stats } = useQuery<PlatformStats>({
     queryKey: ['/api/stats'],
@@ -249,6 +251,50 @@ export default function Landing() {
         </div>
       </header>
 
+      {/* Mini Navigation */}
+      <nav className="sticky top-[73px] z-40 border-b bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-6">
+          <div className="flex items-center justify-center gap-1 py-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => scrollToSection('stats-section')}
+              data-testid="nav-stats"
+              className="text-sm"
+            >
+              Stats
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => scrollToSection('calculator-section')}
+              data-testid="nav-calculator"
+              className="text-sm"
+            >
+              Calculator
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => scrollToSection('activity-section')}
+              data-testid="nav-activity"
+              className="text-sm"
+            >
+              Activity
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => scrollToSection('features-section')}
+              data-testid="nav-features"
+              className="text-sm"
+            >
+              Features
+            </Button>
+          </div>
+        </div>
+      </nav>
+
       <main className="flex-1">
         {/* Hero Section */}
         <section className="container mx-auto px-6 py-16 text-center">
@@ -344,7 +390,7 @@ export default function Landing() {
         )}
 
         {/* Risk Calculator Widget */}
-        <section className="container mx-auto px-6 py-16">
+        <section id="calculator-section" className="container mx-auto px-6 py-16">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-2 mb-3">
@@ -440,7 +486,7 @@ export default function Landing() {
         </section>
 
         {/* Recent Activity Feed */}
-        <section className="bg-muted/50 py-16">
+        <section id="activity-section" className="bg-muted/50 py-16">
           <div className="container mx-auto px-6">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center justify-between mb-8">
@@ -538,7 +584,7 @@ export default function Landing() {
         </section>
 
         {/* Platform Capabilities */}
-        <section className="container mx-auto px-6 py-16">
+        <section id="features-section" className="container mx-auto px-6 py-16">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
               <h3 className="text-3xl font-bold mb-3">Complete Maritime Risk Platform</h3>
