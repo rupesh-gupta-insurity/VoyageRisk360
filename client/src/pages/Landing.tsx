@@ -15,7 +15,8 @@ import {
   Package,
   Activity,
   Calculator,
-  Map as MapIcon
+  Map as MapIcon,
+  ChevronDown
 } from 'lucide-react';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
 
@@ -114,6 +115,13 @@ export default function Landing() {
   const [selectedRoute, setSelectedRoute] = useState<string>('');
   const [calculatedRisk, setCalculatedRisk] = useState<RiskScore | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+
+  const scrollToStats = () => {
+    const statsSection = document.getElementById('stats-section');
+    if (statsSection) {
+      statsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const { data: stats } = useQuery<PlatformStats>({
     queryKey: ['/api/stats'],
@@ -246,18 +254,25 @@ export default function Landing() {
               Public Demo Platform
             </Badge>
             <h2 className="text-4xl md:text-6xl font-bold">
-              Maritime Route Risk Assessment Platform
+              Maritime Route Risk Assessment
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Make informed decisions about maritime voyages with comprehensive risk analysis
               combining weather, piracy, traffic, and historical claims data.
             </p>
             <div className="flex justify-center gap-4 pt-4">
-              <Button size="lg" asChild data-testid="button-get-started">
-                <a href="/dashboard">Get Started Free</a>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                onClick={scrollToStats}
+                data-testid="button-see-live-data"
+                className="group"
+              >
+                See Live Data
+                <ChevronDown className="ml-2 h-4 w-4 group-hover:translate-y-0.5 transition-transform" />
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <a href="/policies">View Demo Data</a>
+                <a href="/policies">Explore Demo</a>
               </Button>
             </div>
           </div>
@@ -265,7 +280,7 @@ export default function Landing() {
 
         {/* Live Statistics */}
         {stats && (
-          <section className="bg-muted/50 py-12">
+          <section id="stats-section" className="bg-muted/50 py-12">
             <div className="container mx-auto px-6">
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold mb-2">Platform Activity</h3>
