@@ -415,8 +415,16 @@ export default function Landing() {
                 See Live Data
                 <ChevronDown className="ml-2 h-4 w-4 group-hover:translate-y-0.5 transition-transform" />
               </Button>
-              <Button size="lg" variant="secondary" asChild>
-                <a href="/policies">Explore Demo</a>
+              <Button 
+                size="lg" 
+                variant="secondary" 
+                onClick={() => {
+                  setCurrentStep(0);
+                  setIsWalkthroughOpen(true);
+                }}
+                data-testid="button-explore-demo"
+              >
+                Explore Demo
               </Button>
             </div>
           </div>
@@ -928,6 +936,93 @@ export default function Landing() {
         </section>
 
       </main>
+
+      {/* Walkthrough Dialog */}
+      <Dialog open={isWalkthroughOpen} onOpenChange={setIsWalkthroughOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              {(() => {
+                const step = WALKTHROUGH_STEPS[currentStep];
+                if (!step) return null;
+                const Icon = step.icon;
+                return (
+                  <>
+                    <Icon className="w-6 h-6 text-primary" />
+                    {step.title}
+                  </>
+                );
+              })()}
+            </DialogTitle>
+          </DialogHeader>
+
+          {WALKTHROUGH_STEPS[currentStep] && (
+            <div className="space-y-6">
+              {/* Image */}
+              <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden bg-muted">
+                <img 
+                  src={WALKTHROUGH_STEPS[currentStep].image} 
+                  alt={WALKTHROUGH_STEPS[currentStep].title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Description */}
+              <p className="text-muted-foreground text-lg leading-relaxed">
+                {WALKTHROUGH_STEPS[currentStep].description}
+              </p>
+
+              {/* Progress Indicator */}
+              <div className="flex items-center justify-center gap-2">
+                {WALKTHROUGH_STEPS.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`h-2 rounded-full transition-all ${
+                      index === currentStep 
+                        ? 'w-8 bg-primary' 
+                        : 'w-2 bg-muted-foreground/30'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                  disabled={currentStep === 0}
+                  data-testid="button-walkthrough-previous"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+
+                <span className="text-sm text-muted-foreground">
+                  Step {currentStep + 1} of {WALKTHROUGH_STEPS.length}
+                </span>
+
+                {currentStep === WALKTHROUGH_STEPS.length - 1 ? (
+                  <Button
+                    onClick={() => setIsWalkthroughOpen(false)}
+                    data-testid="button-walkthrough-close"
+                  >
+                    Get Started
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => setCurrentStep(prev => Math.min(WALKTHROUGH_STEPS.length - 1, prev + 1))}
+                    data-testid="button-walkthrough-next"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <footer className="border-t py-8">
         <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
