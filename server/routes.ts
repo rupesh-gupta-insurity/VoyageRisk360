@@ -69,6 +69,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Platform statistics endpoint
+  app.get('/api/stats', async (req, res) => {
+    try {
+      // Get total policies
+      const policiesCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(policies);
+      
+      // Get total shipments
+      const shipmentsCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(shipmentCertificates);
+      
+      // Get total claims
+      const claimsCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(claims);
+      
+      // Get active shipments (Booked, Loading, In Transit)
+      const activeShipmentsCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(shipmentCertificates)
+        .where(
+          or(
+            eq(shipmentCertificates.status, 'Booked'),
+            eq(shipmentCertificates.status, 'Loading'),
+            eq(shipmentCertificates.status, 'In Transit')
+          )
+        );
+      
+      // Get settled claims
+      const settledClaimsCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(claims)
+        .where(eq(claims.status, 'Settled'));
+      
+      // Get total insured value (sum of all policy coverages)
+      const totalInsuredResult = await db
+        .select({ total: sql<number>`SUM(CAST(${policies.sumInsured} AS DECIMAL))` })
+        .from(policies);
+      
+      // Get total settled amount
+      const totalSettledResult = await db
+        .select({ total: sql<number>`SUM(CAST(${claims.settledAmount} AS DECIMAL))` })
+        .from(claims)
+        .where(eq(claims.status, 'Settled'));
+      
+      res.json({
+        totalPolicies: Number(policiesCount[0]?.count || 0),
+        totalShipments: Number(shipmentsCount[0]?.count || 0),
+        totalClaims: Number(claimsCount[0]?.count || 0),
+        activeShipments: Number(activeShipmentsCount[0]?.count || 0),
+        settledClaims: Number(settledClaimsCount[0]?.count || 0),
+        totalInsuredValue: Number(totalInsuredResult[0]?.total || 0),
+        totalSettledAmount: Number(totalSettledResult[0]?.total || 0),
+      });
+    } catch (error: any) {
+      console.error("Error fetching stats:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch statistics" });
+    }
+  });
+
   // Get all policies with optional filters
   app.get('/api/policies', async (req, res) => {
     try {
@@ -196,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(shipmentCertificates)
-        .where(and(...conditions));
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
       
       const total = Number(countResult[0]?.count || 0);
       
@@ -204,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = await db
         .select()
         .from(shipmentCertificates)
-        .where(and(...conditions))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
         .orderBy(desc(shipmentCertificates.bookingDate))
         .limit(limitNum)
         .offset(offset);

@@ -1,79 +1,562 @@
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Ship, MapPin, AlertTriangle, FileText } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Ship, 
+  MapPin, 
+  AlertTriangle, 
+  FileText, 
+  TrendingUp, 
+  DollarSign, 
+  Package,
+  Activity,
+  Calculator,
+  Map as MapIcon
+} from 'lucide-react';
+import type { Claim, ShipmentCertificate } from '@shared/schema';
+
+interface PlatformStats {
+  totalPolicies: number;
+  totalShipments: number;
+  totalClaims: number;
+  activeShipments: number;
+  settledClaims: number;
+  totalInsuredValue: number;
+  totalSettledAmount: number;
+}
+
+interface RiskScore {
+  overall: number;
+  weather: number;
+  piracy: number;
+  traffic: number;
+  claims: number;
+}
+
+const POPULAR_ROUTES = [
+  {
+    id: 'singapore-rotterdam',
+    name: 'Singapore → Rotterdam',
+    waypoints: [
+      { latitude: 1.29, longitude: 103.85, sequence: 0 },
+      { latitude: 51.92, longitude: 4.48, sequence: 1 }
+    ]
+  },
+  {
+    id: 'shanghai-los-angeles',
+    name: 'Shanghai → Los Angeles',
+    waypoints: [
+      { latitude: 31.23, longitude: 121.47, sequence: 0 },
+      { latitude: 33.74, longitude: -118.27, sequence: 1 }
+    ]
+  },
+  {
+    id: 'dubai-mumbai',
+    name: 'Dubai → Mumbai',
+    waypoints: [
+      { latitude: 25.27, longitude: 55.30, sequence: 0 },
+      { latitude: 18.95, longitude: 72.83, sequence: 1 }
+    ]
+  },
+  {
+    id: 'hong-kong-sydney',
+    name: 'Hong Kong → Sydney',
+    waypoints: [
+      { latitude: 22.32, longitude: 114.17, sequence: 0 },
+      { latitude: -33.87, longitude: 151.21, sequence: 1 }
+    ]
+  },
+  {
+    id: 'suez-gibraltar',
+    name: 'Suez Canal → Gibraltar',
+    waypoints: [
+      { latitude: 29.97, longitude: 32.55, sequence: 0 },
+      { latitude: 36.14, longitude: -5.35, sequence: 1 }
+    ]
+  },
+  {
+    id: 'panama-miami',
+    name: 'Panama Canal → Miami',
+    waypoints: [
+      { latitude: 9.08, longitude: -79.68, sequence: 0 },
+      { latitude: 25.76, longitude: -80.19, sequence: 1 }
+    ]
+  },
+];
+
+function AnimatedCounter({ value, duration = 2000 }: { value: number; duration?: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = value;
+    const increment = end / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [value, duration]);
+
+  return <span>{count.toLocaleString()}</span>;
+}
 
 export default function Landing() {
+  const [selectedRoute, setSelectedRoute] = useState<string>('');
+  const [calculatedRisk, setCalculatedRisk] = useState<RiskScore | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+
+  const { data: stats } = useQuery<PlatformStats>({
+    queryKey: ['/api/stats'],
+  });
+
+  const { data: recentClaims } = useQuery<Claim[]>({
+    queryKey: ['/api/recent-claims'],
+    queryFn: async () => {
+      const response = await fetch('/api/claims?page=1&limit=5');
+      if (!response.ok) throw new Error('Failed to fetch claims');
+      const result = await response.json();
+      return result.data.map((item: any) => item);
+    },
+  });
+
+  const { data: recentShipments } = useQuery<Array<ShipmentCertificate & { policy: any }>>({
+    queryKey: ['/api/recent-shipments'],
+    queryFn: async () => {
+      const response = await fetch('/api/shipments?page=1&limit=5');
+      if (!response.ok) throw new Error('Failed to fetch shipments');
+      const result = await response.json();
+      return result.data;
+    },
+  });
+
+  const handleCalculateRisk = async () => {
+    if (!selectedRoute) return;
+
+    const route = POPULAR_ROUTES.find(r => r.id === selectedRoute);
+    if (!route) return;
+
+    setIsCalculating(true);
+    try {
+      const response = await fetch('/api/calculate-risk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ waypoints: route.waypoints }),
+      });
+
+      if (!response.ok) throw new Error('Failed to calculate risk');
+      const scores = await response.json();
+
+      // Average the risk scores across waypoints
+      const avgRisk = {
+        overall: Math.round(scores.reduce((sum: number, s: any) => sum + s.overallRisk, 0) / scores.length),
+        weather: Math.round(scores.reduce((sum: number, s: any) => sum + s.weatherRisk, 0) / scores.length),
+        piracy: Math.round(scores.reduce((sum: number, s: any) => sum + s.piracyRisk, 0) / scores.length),
+        traffic: Math.round(scores.reduce((sum: number, s: any) => sum + s.trafficRisk, 0) / scores.length),
+        claims: Math.round(scores.reduce((sum: number, s: any) => sum + s.claimsRisk, 0) / scores.length),
+      };
+
+      setCalculatedRisk(avgRisk);
+    } catch (error) {
+      console.error('Error calculating risk:', error);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedRoute) {
+      handleCalculateRisk();
+    }
+  }, [selectedRoute]);
+
+  const getRiskColor = (risk: number) => {
+    if (risk < 30) return 'text-green-600 dark:text-green-400';
+    if (risk < 60) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
+  };
+
+  const getRiskLabel = (risk: number) => {
+    if (risk < 30) return 'Low Risk';
+    if (risk < 60) return 'Medium Risk';
+    return 'High Risk';
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const getRelativeTime = (date: string | Date) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diffMs = now.getTime() - then.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+
+  const getClaimStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      'Settled': 'bg-green-500/10 text-green-700 dark:text-green-400',
+      'Approved': 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+      'Reported': 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
+      'Investigation': 'bg-orange-500/10 text-orange-700 dark:text-orange-400',
+      'Rejected': 'bg-red-500/10 text-red-700 dark:text-red-400',
+    };
+    return colors[status] || 'bg-gray-500/10 text-gray-700 dark:text-gray-400';
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b">
+      <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Ship className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold">VoyageRisk360</h1>
           </div>
+          <Button variant="outline" asChild data-testid="button-get-started-header">
+            <a href="/dashboard">Launch App</a>
+          </Button>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6">
-        <div className="max-w-4xl w-full text-center space-y-8">
-          <div className="space-y-4">
-            <h2 className="text-4xl md:text-5xl font-bold">
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="container mx-auto px-6 py-16 text-center">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <Badge variant="outline" className="text-sm">
+              Public Demo Platform
+            </Badge>
+            <h2 className="text-4xl md:text-6xl font-bold">
               Maritime Route Risk Assessment Platform
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Make informed decisions about maritime voyages with comprehensive risk analysis
               combining weather, piracy, traffic, and historical claims data.
             </p>
+            <div className="flex justify-center gap-4 pt-4">
+              <Button size="lg" asChild data-testid="button-get-started">
+                <a href="/dashboard">Get Started Free</a>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <a href="/policies">View Demo Data</a>
+              </Button>
+            </div>
           </div>
+        </section>
 
-          <div className="flex justify-center gap-4">
-            <Button size="lg" asChild data-testid="button-get-started">
-              <a href="/dashboard">Get Started</a>
-            </Button>
+        {/* Live Statistics */}
+        {stats && (
+          <section className="bg-muted/50 py-12">
+            <div className="container mx-auto px-6">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold mb-2">Platform Activity</h3>
+                <p className="text-muted-foreground">Real-time statistics from our maritime insurance platform</p>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+                <Card className="p-6 text-center hover-elevate">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold mb-1" data-testid="stat-total-policies">
+                    <AnimatedCounter value={stats.totalPolicies} />
+                  </div>
+                  <div className="text-sm text-muted-foreground">Active Policies</div>
+                </Card>
+
+                <Card className="p-6 text-center hover-elevate">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <Package className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold mb-1" data-testid="stat-active-shipments">
+                    <AnimatedCounter value={stats.activeShipments} />
+                  </div>
+                  <div className="text-sm text-muted-foreground">In Transit</div>
+                </Card>
+
+                <Card className="p-6 text-center hover-elevate">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold mb-1" data-testid="stat-total-claims">
+                    <AnimatedCounter value={stats.totalClaims} />
+                  </div>
+                  <div className="text-sm text-muted-foreground">Claims Processed</div>
+                </Card>
+
+                <Card className="p-6 text-center hover-elevate">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold mb-1" data-testid="stat-insured-value">
+                    {formatCurrency(stats.totalInsuredValue)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Insured</div>
+                </Card>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Risk Calculator Widget */}
+        <section className="container mx-auto px-6 py-16">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Calculator className="w-6 h-6 text-primary" />
+                <h3 className="text-2xl font-bold">Route Risk Calculator</h3>
+              </div>
+              <p className="text-muted-foreground">Select a popular maritime route to see instant risk analysis</p>
+            </div>
+
+            <Card className="p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Select Route</label>
+                  <Select value={selectedRoute} onValueChange={setSelectedRoute}>
+                    <SelectTrigger data-testid="select-route">
+                      <SelectValue placeholder="Choose a maritime route..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {POPULAR_ROUTES.map((route) => (
+                        <SelectItem key={route.id} value={route.id}>
+                          {route.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {isCalculating && (
+                  <div className="text-center py-8">
+                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+                    <p className="text-sm text-muted-foreground">Analyzing maritime conditions...</p>
+                  </div>
+                )}
+
+                {calculatedRisk && !isCalculating && (
+                  <div className="space-y-4">
+                    <div className="text-center py-4">
+                      <div className={`text-5xl font-bold ${getRiskColor(calculatedRisk.overall)} mb-2`} data-testid="risk-overall-score">
+                        {calculatedRisk.overall}
+                      </div>
+                      <div className="text-lg font-medium">{getRiskLabel(calculatedRisk.overall)}</div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Weather Risk</span>
+                          <span className="text-sm text-muted-foreground">{calculatedRisk.weather}%</span>
+                        </div>
+                        <Progress value={calculatedRisk.weather} className="h-2" />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Piracy Risk</span>
+                          <span className="text-sm text-muted-foreground">{calculatedRisk.piracy}%</span>
+                        </div>
+                        <Progress value={calculatedRisk.piracy} className="h-2" />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Traffic Density</span>
+                          <span className="text-sm text-muted-foreground">{calculatedRisk.traffic}%</span>
+                        </div>
+                        <Progress value={calculatedRisk.traffic} className="h-2" />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium">Historical Claims</span>
+                          <span className="text-sm text-muted-foreground">{calculatedRisk.claims}%</span>
+                        </div>
+                        <Progress value={calculatedRisk.claims} className="h-2" />
+                      </div>
+                    </div>
+
+                    <Button className="w-full" asChild>
+                      <a href="/dashboard">Create Custom Route Analysis</a>
+                    </Button>
+                  </div>
+                )}
+
+                {!selectedRoute && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MapIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>Select a route above to see risk analysis</p>
+                  </div>
+                )}
+              </div>
+            </Card>
           </div>
+        </section>
 
-          <div className="grid md:grid-cols-4 gap-6 pt-12">
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-chart-1/10 flex items-center justify-center mx-auto">
+        {/* Recent Activity Feed */}
+        <section className="bg-muted/50 py-16">
+          <div className="container mx-auto px-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Activity className="w-6 h-6 text-primary" />
+                  <h3 className="text-2xl font-bold">Live Activity Feed</h3>
+                </div>
+                <p className="text-muted-foreground">Recent claims and shipments across the platform</p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Recent Claims */}
+                <Card className="p-6">
+                  <h4 className="font-semibold mb-4 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Recent Claims
+                  </h4>
+                  <div className="space-y-3">
+                    {recentClaims?.slice(0, 5).map((claim, idx) => (
+                      <div key={claim.id || idx} className="flex items-start gap-3 pb-3 border-b last:border-0">
+                        <div className="w-2 h-2 rounded-full bg-red-500 mt-2"></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium truncate">{claim.claimNumber}</span>
+                            <Badge variant="outline" className={`text-xs ${getClaimStatusColor(claim.status)}`}>
+                              {claim.status}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">{claim.lossType}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {claim.reportedDate && getRelativeTime(claim.reportedDate)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Recent Shipments */}
+                <Card className="p-6">
+                  <h4 className="font-semibold mb-4 flex items-center gap-2">
+                    <Ship className="w-4 h-4" />
+                    Recent Shipments
+                  </h4>
+                  <div className="space-y-3">
+                    {recentShipments?.slice(0, 5).map((shipment, idx) => (
+                      <div key={shipment.id || idx} className="flex items-start gap-3 pb-3 border-b last:border-0">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium truncate">{shipment.certificateNumber}</span>
+                            <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400">
+                              {shipment.status}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {shipment.sourcePort} → {shipment.destinationPort}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {shipment.bookingDate && getRelativeTime(shipment.bookingDate)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Cards */}
+        <section className="container mx-auto px-6 py-16">
+          <div className="grid md:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            <Card className="p-6 text-center hover-elevate">
+              <div className="w-12 h-12 rounded-lg bg-chart-1/10 flex items-center justify-center mx-auto mb-4">
                 <MapPin className="w-6 h-6 text-chart-1" />
               </div>
-              <h3 className="font-semibold">Interactive Mapping</h3>
+              <h3 className="font-semibold mb-2">Interactive Mapping</h3>
               <p className="text-sm text-muted-foreground">
                 Draw routes and visualize risks with multi-layer heatmaps
               </p>
-            </div>
+            </Card>
 
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-chart-2/10 flex items-center justify-center mx-auto">
+            <Card className="p-6 text-center hover-elevate">
+              <div className="w-12 h-12 rounded-lg bg-chart-2/10 flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-6 h-6 text-chart-2" />
               </div>
-              <h3 className="font-semibold">Risk Scoring</h3>
+              <h3 className="font-semibold mb-2">Risk Scoring</h3>
               <p className="text-sm text-muted-foreground">
                 Multi-factor analysis of weather, piracy, traffic, and claims
               </p>
-            </div>
+            </Card>
 
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-chart-3/10 flex items-center justify-center mx-auto">
+            <Card className="p-6 text-center hover-elevate">
+              <div className="w-12 h-12 rounded-lg bg-chart-3/10 flex items-center justify-center mx-auto mb-4">
                 <Ship className="w-6 h-6 text-chart-3" />
               </div>
-              <h3 className="font-semibold">Route Management</h3>
+              <h3 className="font-semibold mb-2">Route Management</h3>
               <p className="text-sm text-muted-foreground">
                 Save, manage, and export route assessments
               </p>
-            </div>
+            </Card>
 
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-lg bg-chart-4/10 flex items-center justify-center mx-auto">
+            <Card className="p-6 text-center hover-elevate">
+              <div className="w-12 h-12 rounded-lg bg-chart-4/10 flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-6 h-6 text-chart-4" />
               </div>
-              <h3 className="font-semibold">Custom Alerts</h3>
+              <h3 className="font-semibold mb-2">Claims Management</h3>
               <p className="text-sm text-muted-foreground">
-                Configure thresholds and receive risk notifications
+                Track and analyze maritime insurance claims
               </p>
-            </div>
+            </Card>
           </div>
-        </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="container mx-auto px-6 py-16 text-center">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <h3 className="text-3xl font-bold">Ready to Assess Your Routes?</h3>
+            <p className="text-lg text-muted-foreground">
+              Start analyzing maritime voyage risks with real-time data and comprehensive insights
+            </p>
+            <Button size="lg" asChild data-testid="button-start-now">
+              <a href="/dashboard">Start Now - It's Free</a>
+            </Button>
+          </div>
+        </section>
       </main>
+
+      <footer className="border-t py-8">
+        <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
+          <p>VoyageRisk360 - Maritime Route Risk Assessment Platform (Demo)</p>
+        </div>
+      </footer>
     </div>
   );
 }
