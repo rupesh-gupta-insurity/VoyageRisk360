@@ -402,9 +402,9 @@ export default function Shipments() {
                       </TableCell>
                       <TableCell className="text-sm">
                         <Link href="/policies">
-                          <Button variant="link" className="p-0 h-auto font-normal text-sm" data-testid={`link-policy-${shipment.policy.id}`}>
+                          <a className="text-primary hover:underline cursor-pointer" data-testid={`link-policy-${shipment.policy.id}`}>
                             {shipment.policy.policyNo}
-                          </Button>
+                          </a>
                         </Link>
                         <div className="text-xs text-muted-foreground">{shipment.policy.insurer}</div>
                       </TableCell>
