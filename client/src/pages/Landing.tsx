@@ -18,7 +18,8 @@ import {
   Map as MapIcon,
   ChevronDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ArrowUp
 } from 'lucide-react';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
 
@@ -119,6 +120,7 @@ export default function Landing() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [activityPage, setActivityPage] = useState(0);
   const [activeSection, setActiveSection] = useState<string>('');
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
@@ -197,6 +199,9 @@ export default function Landing() {
     const handleScroll = () => {
       const sections = ['stats-section', 'calculator-section', 'activity-section', 'features-section'];
       const scrollPosition = window.scrollY + 200; // Offset for better detection
+
+      // Show back to top button after scrolling 300px
+      setShowBackToTop(window.scrollY > 300);
 
       for (const sectionId of sections) {
         const section = document.getElementById(sectionId);
@@ -299,6 +304,20 @@ export default function Landing() {
           </button>
         ))}
       </div>
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <Button
+          variant="default"
+          size="icon"
+          className="fixed bottom-8 right-8 z-40 rounded-full shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-300"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          data-testid="button-back-to-top"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="h-5 w-5" />
+        </Button>
+      )}
 
       <main className="flex-1">
         {/* Hero Section */}
