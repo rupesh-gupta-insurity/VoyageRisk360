@@ -172,16 +172,14 @@ export default function Landing() {
       if (!response.ok) throw new Error('Failed to calculate risk');
       const scores = await response.json();
 
-      // Average the risk scores across waypoints
-      const avgRisk = {
-        overall: Math.round(scores.reduce((sum: number, s: any) => sum + s.overallRisk, 0) / scores.length),
-        weather: Math.round(scores.reduce((sum: number, s: any) => sum + s.weatherRisk, 0) / scores.length),
-        piracy: Math.round(scores.reduce((sum: number, s: any) => sum + s.piracyRisk, 0) / scores.length),
-        traffic: Math.round(scores.reduce((sum: number, s: any) => sum + s.trafficRisk, 0) / scores.length),
-        claims: Math.round(scores.reduce((sum: number, s: any) => sum + s.claimsRisk, 0) / scores.length),
-      };
-
-      setCalculatedRisk(avgRisk);
+      // API returns aggregated scores directly as an object
+      setCalculatedRisk({
+        overall: scores.overall,
+        weather: scores.weather,
+        piracy: scores.piracy,
+        traffic: scores.traffic,
+        claims: scores.claims,
+      });
     } catch (error) {
       console.error('Error calculating risk:', error);
     } finally {
