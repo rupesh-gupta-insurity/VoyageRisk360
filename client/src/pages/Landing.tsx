@@ -118,7 +118,7 @@ export default function Landing() {
   const [calculatedRisk, setCalculatedRisk] = useState<RiskScore | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [activityPage, setActivityPage] = useState(0);
-  const [showMiniNav, setShowMiniNav] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
 
   const scrollToSection = (sectionId: string) => {
     const section = document.getElementById(sectionId);
@@ -195,11 +195,23 @@ export default function Landing() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show mini-nav after scrolling past 400px (roughly past hero section)
-      setShowMiniNav(window.scrollY > 400);
+      const sections = ['stats-section', 'calculator-section', 'activity-section', 'features-section'];
+      const scrollPosition = window.scrollY + 200; // Offset for better detection
+
+      for (const sectionId of sections) {
+        const section = document.getElementById(sectionId);
+        if (section) {
+          const { offsetTop, offsetHeight } = section;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(sectionId);
+            break;
+          }
+        }
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -262,51 +274,31 @@ export default function Landing() {
         </div>
       </header>
 
-      {/* Mini Navigation - appears after scroll */}
-      {showMiniNav && (
-        <nav className="sticky top-[73px] z-40 border-b bg-background/95 backdrop-blur animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="container mx-auto px-6">
-            <div className="flex items-center justify-center gap-1 py-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => scrollToSection('stats-section')}
-                data-testid="nav-stats"
-                className="text-sm"
-              >
-                Stats
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => scrollToSection('calculator-section')}
-                data-testid="nav-calculator"
-                className="text-sm"
-              >
-                Calculator
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => scrollToSection('activity-section')}
-                data-testid="nav-activity"
-                className="text-sm"
-              >
-                Activity
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => scrollToSection('features-section')}
-                data-testid="nav-features"
-                className="text-sm"
-              >
-                Features
-              </Button>
-            </div>
-          </div>
-        </nav>
-      )}
+      {/* Side Progress Dots */}
+      <div className="fixed right-8 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-4">
+        {[
+          { id: 'stats-section', label: 'Stats' },
+          { id: 'calculator-section', label: 'Calculator' },
+          { id: 'activity-section', label: 'Activity' },
+          { id: 'features-section', label: 'Features' },
+        ].map((section) => (
+          <button
+            key={section.id}
+            onClick={() => scrollToSection(section.id)}
+            className={`group relative w-3 h-3 rounded-full transition-all duration-300 ${
+              activeSection === section.id
+                ? 'bg-primary scale-125'
+                : 'bg-muted-foreground/30 hover:bg-muted-foreground/60'
+            }`}
+            data-testid={`dot-${section.id}`}
+            aria-label={`Navigate to ${section.label}`}
+          >
+            <span className="absolute right-6 top-1/2 -translate-y-1/2 bg-popover text-popover-foreground text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border">
+              {section.label}
+            </span>
+          </button>
+        ))}
+      </div>
 
       <main className="flex-1">
         {/* Hero Section */}
