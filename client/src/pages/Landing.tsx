@@ -283,10 +283,10 @@ export default function Landing() {
           <section id="stats-section" className="bg-muted/50 py-12">
             <div className="container mx-auto px-6">
               <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold mb-2">Platform Activity</h3>
-                <p className="text-muted-foreground">Real-time statistics from our maritime insurance platform</p>
+                <h3 className="text-2xl font-bold mb-2">Live Platform Metrics</h3>
+                <p className="text-muted-foreground">Real-time data from our maritime insurance platform</p>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
                 <Card className="p-6 text-center hover-elevate">
                   <div className="flex justify-center mb-3">
                     <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -335,41 +335,6 @@ export default function Landing() {
                   <div className="text-sm text-muted-foreground">Total Claims</div>
                 </Card>
 
-                <Card className="p-6 text-center hover-elevate">
-                  <div className="flex justify-center mb-3">
-                    <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                      <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                  </div>
-                  <div className="text-3xl font-bold mb-1" data-testid="stat-settled-claims">
-                    <AnimatedCounter value={stats.settledClaims} />
-                  </div>
-                  <div className="text-sm text-muted-foreground">Settled Claims</div>
-                </Card>
-
-                <Card className="p-6 text-center hover-elevate">
-                  <div className="flex justify-center mb-3">
-                    <div className="w-12 h-12 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold mb-1" data-testid="stat-insured-value">
-                    {formatCurrency(stats.totalInsuredValue)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Total Insured</div>
-                </Card>
-
-                <Card className="p-6 text-center hover-elevate">
-                  <div className="flex justify-center mb-3">
-                    <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
-                      <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold mb-1 text-green-600 dark:text-green-400" data-testid="stat-settled-amount">
-                    {formatCurrency(stats.totalSettledAmount)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Total Settled</div>
-                </Card>
               </div>
             </div>
           </section>
@@ -544,48 +509,59 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Feature Cards */}
+        {/* Platform Capabilities */}
         <section className="container mx-auto px-6 py-16">
-          <div className="grid md:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            <Card className="p-6 text-center hover-elevate">
-              <div className="w-12 h-12 rounded-lg bg-chart-1/10 flex items-center justify-center mx-auto mb-4">
-                <MapPin className="w-6 h-6 text-chart-1" />
-              </div>
-              <h3 className="font-semibold mb-2">Interactive Mapping</h3>
-              <p className="text-sm text-muted-foreground">
-                Draw routes and visualize risks with multi-layer heatmaps
-              </p>
-            </Card>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h3 className="text-3xl font-bold mb-3">Complete Maritime Risk Platform</h3>
+              <p className="text-muted-foreground">Everything you need to assess and manage maritime voyage risks</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="p-8 hover-elevate">
+                <div className="w-14 h-14 rounded-lg bg-chart-1/10 flex items-center justify-center mb-4">
+                  <MapPin className="w-7 h-7 text-chart-1" />
+                </div>
+                <h4 className="text-xl font-semibold mb-3">Interactive Route Mapping</h4>
+                <p className="text-muted-foreground leading-relaxed">
+                  Draw custom routes with our intuitive map interface. Visualize multi-layer risk heatmaps 
+                  showing weather patterns, piracy zones, traffic density, and historical claims data.
+                </p>
+              </Card>
 
-            <Card className="p-6 text-center hover-elevate">
-              <div className="w-12 h-12 rounded-lg bg-chart-2/10 flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle className="w-6 h-6 text-chart-2" />
-              </div>
-              <h3 className="font-semibold mb-2">Risk Scoring</h3>
-              <p className="text-sm text-muted-foreground">
-                Multi-factor analysis of weather, piracy, traffic, and claims
-              </p>
-            </Card>
+              <Card className="p-8 hover-elevate">
+                <div className="w-14 h-14 rounded-lg bg-chart-2/10 flex items-center justify-center mb-4">
+                  <AlertTriangle className="w-7 h-7 text-chart-2" />
+                </div>
+                <h4 className="text-xl font-semibold mb-3">Multi-Factor Risk Analysis</h4>
+                <p className="text-muted-foreground leading-relaxed">
+                  Comprehensive risk scoring engine analyzing weather conditions, piracy threats, 
+                  vessel traffic density, and historical claims to provide accurate voyage assessments.
+                </p>
+              </Card>
 
-            <Card className="p-6 text-center hover-elevate">
-              <div className="w-12 h-12 rounded-lg bg-chart-3/10 flex items-center justify-center mx-auto mb-4">
-                <Ship className="w-6 h-6 text-chart-3" />
-              </div>
-              <h3 className="font-semibold mb-2">Route Management</h3>
-              <p className="text-sm text-muted-foreground">
-                Save, manage, and export route assessments
-              </p>
-            </Card>
+              <Card className="p-8 hover-elevate">
+                <div className="w-14 h-14 rounded-lg bg-chart-3/10 flex items-center justify-center mb-4">
+                  <Ship className="w-7 h-7 text-chart-3" />
+                </div>
+                <h4 className="text-xl font-semibold mb-3">Policy & Shipment Tracking</h4>
+                <p className="text-muted-foreground leading-relaxed">
+                  Manage insurance policies, track shipment certificates, and monitor vessel movements 
+                  in real-time with our comprehensive maritime management system.
+                </p>
+              </Card>
 
-            <Card className="p-6 text-center hover-elevate">
-              <div className="w-12 h-12 rounded-lg bg-chart-4/10 flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-6 h-6 text-chart-4" />
-              </div>
-              <h3 className="font-semibold mb-2">Claims Management</h3>
-              <p className="text-sm text-muted-foreground">
-                Track and analyze maritime insurance claims
-              </p>
-            </Card>
+              <Card className="p-8 hover-elevate">
+                <div className="w-14 h-14 rounded-lg bg-chart-4/10 flex items-center justify-center mb-4">
+                  <FileText className="w-7 h-7 text-chart-4" />
+                </div>
+                <h4 className="text-xl font-semibold mb-3">Claims Management</h4>
+                <p className="text-muted-foreground leading-relaxed">
+                  Track and analyze maritime insurance claims from incident reporting through settlement. 
+                  Access historical data to identify patterns and improve risk assessment accuracy.
+                </p>
+              </Card>
+            </div>
           </div>
         </section>
 
