@@ -14,8 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Ship, Package, Calendar, DollarSign, MapPin, Search, FileDown } from 'lucide-react';
-import type { Policy, ShipmentCertificate } from '@shared/schema';
+import { Ship, Package, Calendar, DollarSign, MapPin, Search, FileDown, FileText, AlertCircle } from 'lucide-react';
+import type { Policy, ShipmentCertificate, Claim } from '@shared/schema';
 
 interface PolicyDetailModalProps {
   policy: Policy | null;
@@ -46,6 +46,24 @@ export default function PolicyDetailModal({ policy, open, onOpenChange }: Policy
       });
       const response = await fetch(`/api/policies/${policy.id}/shipments?${params}`);
       if (!response.ok) throw new Error('Failed to fetch shipments');
+      return response.json();
+    },
+    enabled: !!policy && open,
+  });
+
+  interface ClaimWithShipment extends Claim {
+    shipment: {
+      id: string;
+      certificateNumber: string;
+    } | null;
+  }
+
+  const { data: claimsData, isLoading: claimsLoading } = useQuery<ClaimWithShipment[]>({
+    queryKey: ['/api/policies', policy?.id, 'claims'],
+    queryFn: async () => {
+      if (!policy) return [];
+      const response = await fetch(`/api/policies/${policy.id}/claims`);
+      if (!response.ok) throw new Error('Failed to fetch claims');
       return response.json();
     },
     enabled: !!policy && open,
@@ -99,10 +117,13 @@ export default function PolicyDetailModal({ policy, open, onOpenChange }: Policy
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details" data-testid="tab-details">Details</TabsTrigger>
             <TabsTrigger value="shipments" data-testid="tab-shipments">
               Shipments ({shipmentsData?.pagination.total || 0})
+            </TabsTrigger>
+            <TabsTrigger value="claims" data-testid="tab-claims">
+              Claims ({claimsData?.length || 0})
             </TabsTrigger>
           </TabsList>
 
@@ -314,6 +335,146 @@ export default function PolicyDetailModal({ policy, open, onOpenChange }: Policy
                       Next
                     </Button>
                   </div>
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="claims" className="space-y-4">
+            {claimsLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading claims...</p>
+              </div>
+            ) : !claimsData || claimsData.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No claims filed for this policy</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <FileText className="w-4 h-4" />
+                      Total Claims
+                    </div>
+                    <div className="text-2xl font-bold" data-testid="stat-total-claims">
+                      {claimsData.length}
+                    </div>
+                  </div>
+
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <DollarSign className="w-4 h-4" />
+                      Total Claimed
+                    </div>
+                    <div className="text-2xl font-bold" data-testid="stat-total-claimed">
+                      {formatCurrency(
+                        claimsData
+                          .reduce((sum, c) => sum + (parseFloat(c.claimedAmount || '0')), 0)
+                          .toString(),
+                        policy.currency
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <DollarSign className="w-4 h-4" />
+                      Total Settled
+                    </div>
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400" data-testid="stat-total-settled">
+                      {formatCurrency(
+                        claimsData
+                          .filter(c => c.settledAmount)
+                          .reduce((sum, c) => sum + (parseFloat(c.settledAmount || '0')), 0)
+                          .toString(),
+                        policy.currency
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                      <AlertCircle className="w-4 h-4" />
+                      Active Claims
+                    </div>
+                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400" data-testid="stat-active-claims">
+                      {claimsData.filter(c => 
+                        ['Reported', 'Under Review', 'Investigation', 'Approved'].includes(c.status)
+                      ).length}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Claim #</TableHead>
+                        <TableHead>Shipment</TableHead>
+                        <TableHead>Loss Type</TableHead>
+                        <TableHead>Incident Date</TableHead>
+                        <TableHead>Claimed</TableHead>
+                        <TableHead>Settled</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {claimsData.map((claim) => (
+                        <TableRow key={claim.id} data-testid={`row-claim-${claim.id}`}>
+                          <TableCell className="font-mono text-xs" data-testid={`text-claim-number-${claim.id}`}>
+                            {claim.claimNumber}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {claim.shipment ? (
+                              <span className="font-mono text-xs">
+                                {claim.shipment.certificateNumber}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">N/A</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm" data-testid={`text-loss-type-${claim.id}`}>
+                            {claim.lossType}
+                          </TableCell>
+                          <TableCell className="text-sm" data-testid={`text-incident-date-${claim.id}`}>
+                            {claim.incidentDate ? formatDate(claim.incidentDate) : 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-sm font-medium" data-testid={`text-claimed-${claim.id}`}>
+                            {claim.claimedAmount
+                              ? formatCurrency(claim.claimedAmount, claim.currency || policy.currency)
+                              : 'N/A'}
+                          </TableCell>
+                          <TableCell className="text-sm font-medium" data-testid={`text-settled-${claim.id}`}>
+                            {claim.settledAmount
+                              ? formatCurrency(claim.settledAmount, claim.currency || policy.currency)
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={(() => {
+                                const colors: Record<string, string> = {
+                                  'Settled': 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
+                                  'Approved': 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+                                  'Reported': 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20',
+                                  'Under Review': 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
+                                  'Investigation': 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20',
+                                  'Rejected': 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20',
+                                  'Withdrawn': 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20',
+                                };
+                                return colors[claim.status] || 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/20';
+                              })()}
+                              data-testid={`badge-claim-status-${claim.id}`}
+                            >
+                              {claim.status}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </>
             )}
