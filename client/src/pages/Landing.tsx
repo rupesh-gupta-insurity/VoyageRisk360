@@ -271,7 +271,7 @@ export default function Landing() {
                 <h3 className="text-2xl font-bold mb-2">Platform Activity</h3>
                 <p className="text-muted-foreground">Real-time statistics from our maritime insurance platform</p>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
                 <Card className="p-6 text-center hover-elevate">
                   <div className="flex justify-center mb-3">
                     <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -281,7 +281,19 @@ export default function Landing() {
                   <div className="text-3xl font-bold mb-1" data-testid="stat-total-policies">
                     <AnimatedCounter value={stats.totalPolicies} />
                   </div>
-                  <div className="text-sm text-muted-foreground">Active Policies</div>
+                  <div className="text-sm text-muted-foreground">Total Policies</div>
+                </Card>
+
+                <Card className="p-6 text-center hover-elevate">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                      <Ship className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold mb-1" data-testid="stat-total-shipments">
+                    <AnimatedCounter value={stats.totalShipments} />
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Shipments</div>
                 </Card>
 
                 <Card className="p-6 text-center hover-elevate">
@@ -299,13 +311,25 @@ export default function Landing() {
                 <Card className="p-6 text-center hover-elevate">
                   <div className="flex justify-center mb-3">
                     <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                      <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                      <AlertTriangle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     </div>
                   </div>
                   <div className="text-3xl font-bold mb-1" data-testid="stat-total-claims">
                     <AnimatedCounter value={stats.totalClaims} />
                   </div>
-                  <div className="text-sm text-muted-foreground">Claims Processed</div>
+                  <div className="text-sm text-muted-foreground">Total Claims</div>
+                </Card>
+
+                <Card className="p-6 text-center hover-elevate">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold mb-1" data-testid="stat-settled-claims">
+                    <AnimatedCounter value={stats.settledClaims} />
+                  </div>
+                  <div className="text-sm text-muted-foreground">Settled Claims</div>
                 </Card>
 
                 <Card className="p-6 text-center hover-elevate">
@@ -314,10 +338,22 @@ export default function Landing() {
                       <DollarSign className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                     </div>
                   </div>
-                  <div className="text-xl font-bold mb-1" data-testid="stat-insured-value">
+                  <div className="text-2xl font-bold mb-1" data-testid="stat-insured-value">
                     {formatCurrency(stats.totalInsuredValue)}
                   </div>
                   <div className="text-sm text-muted-foreground">Total Insured</div>
+                </Card>
+
+                <Card className="p-6 text-center hover-elevate">
+                  <div className="flex justify-center mb-3">
+                    <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold mb-1 text-green-600 dark:text-green-400" data-testid="stat-settled-amount">
+                    {formatCurrency(stats.totalSettledAmount)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Settled</div>
                 </Card>
               </div>
             </div>

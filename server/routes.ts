@@ -107,12 +107,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get total insured value (sum of all policy coverages)
       const totalInsuredResult = await db
-        .select({ total: sql<number>`SUM(CAST(${policies.sumInsured} AS DECIMAL))` })
+        .select({ total: sql<number>`COALESCE(SUM(${policies.sumInsured}::numeric), 0)` })
         .from(policies);
       
       // Get total settled amount
       const totalSettledResult = await db
-        .select({ total: sql<number>`SUM(CAST(${claims.settledAmount} AS DECIMAL))` })
+        .select({ total: sql<number>`COALESCE(SUM(${claims.settledAmount}::numeric), 0)` })
         .from(claims)
         .where(eq(claims.status, 'Settled'));
       
