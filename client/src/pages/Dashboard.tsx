@@ -249,7 +249,7 @@ export default function Dashboard() {
     <div className="flex h-screen flex-col">
       <header className="flex h-16 items-center justify-between border-b px-6">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard">
+          <Link href="/">
             <div className="flex items-center gap-2 cursor-pointer hover-elevate active-elevate-2 px-3 py-2 rounded-md">
               <Ship className="h-6 w-6 text-primary" />
               <h1 className="text-xl font-bold">VoyageRisk360</h1>

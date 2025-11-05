@@ -86,7 +86,7 @@ export default function Policies() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/dashboard">
+            <Link href="/">
               <div className="flex items-center gap-2 cursor-pointer hover-elevate active-elevate-2 px-3 py-2 rounded-md">
                 <Ship className="w-6 h-6 text-primary" />
                 <span className="text-xl font-bold">VoyageRisk360</span>

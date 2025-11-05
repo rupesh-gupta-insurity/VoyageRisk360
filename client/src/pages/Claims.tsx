@@ -155,7 +155,7 @@ export default function Claims() {
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link href="/dashboard">
+            <Link href="/">
               <a className="text-xl font-bold text-primary hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-home">
                 VoyageRisk360
               </a>
