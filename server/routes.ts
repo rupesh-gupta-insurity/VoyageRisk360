@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { calculateRouteRisk } from "./riskEngine";
 import { searchLocation, getRouteEndpoints } from "./services/geocodingService";
+import { generateRiskInsights, generateChatResponseStream } from "./services/aiService";
 import { z } from "zod";
 import { db } from "./db";
 import { policies, shipmentCertificates, claims, insertShipmentCertificateSchema, insertClaimSchema } from "@shared/schema";
@@ -26,6 +27,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error calculating risk:", error);
       res.status(400).json({ message: error.message || "Failed to calculate risk" });
+    }
+  });
+
+  // AI Risk Insights endpoint
+  app.post('/api/ai-insights', async (req, res) => {
+    try {
+      const { riskScores, routeInfo } = req.body;
+      
+      if (!riskScores || !routeInfo) {
+        return res.status(400).json({ message: 'Risk scores and route info are required' });
+      }
+
+      const insights = await generateRiskInsights(riskScores, routeInfo);
+      res.json({ insights });
+    } catch (error: any) {
+      console.error("Error generating AI insights:", error);
+      res.status(500).json({ message: error.message || "Failed to generate insights" });
+    }
+  });
+
+  // AI Chat endpoint with streaming
+  app.post('/api/chat', async (req, res) => {
+    try {
+      const { messages, context } = req.body;
+      
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ message: 'Messages array is required' });
+      }
+
+      // Set headers for streaming
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      const stream = await generateChatResponseStream(messages, context);
+
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        if (content) {
+          res.write(`data: ${JSON.stringify({ content })}\n\n`);
+        }
+      }
+
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch (error: any) {
+      console.error("Error in chat:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: error.message || "Failed to generate response" });
+      }
     }
   });
 
