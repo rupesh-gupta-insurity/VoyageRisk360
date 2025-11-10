@@ -12,6 +12,33 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### November 10, 2025
+- **🤖 AI-Powered Underwriting Intelligence**:
+  - **OpenAI GPT-5 Integration** - Natural language risk insights and conversational assistance
+  - **Risk Insights Generator** - Generates narrative explanations of risk scores with actionable recommendations
+  - **Conversational Assistant** - Chat interface for querying policies, shipments, claims, and routes
+  - **Streaming Responses** - Real-time streaming chat for instant feedback
+  - **Global Chat Widget** - Floating chat button accessible from all pages (Dashboard, Policies, Shipments, Claims, Landing)
+  - **Example Prompts** - Guided suggestions for common queries
+- **Implementation Details**:
+  - Created `server/services/aiService.ts` with OpenAI client (GPT-5 model)
+  - Added `/api/ai-insights` endpoint for risk narrative generation
+  - Added `/api/chat` endpoint with streaming support and database context
+  - Built `client/src/components/ChatWidget.tsx` with expandable chat interface
+  - Integrated chat widget globally in App.tsx
+  - Uses `max_completion_tokens` parameter (GPT-5 doesn't support temperature)
+- **AI Capabilities**:
+  - Explains risk scores in plain language
+  - Answers questions about policies, shipments, and claims
+  - Provides underwriting recommendations
+  - Searches database for specific information
+  - Helps users understand maritime risk factors
+- **Testing**:
+  - Risk insights generation working for route risk scores
+  - Chat streaming responses functioning correctly
+  - Global chat widget accessible from all pages
+  - Example prompts guiding user interactions
+
 ### November 4, 2025
 - **📦 Shipment Certificates Global View**:
   - **Dedicated Shipments page** - Browse all 192 shipments across 50 policies in one place

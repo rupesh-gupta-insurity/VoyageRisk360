@@ -21,11 +21,24 @@ export async function generateRiskInsights(
   routeInfo: RouteInfo
 ): Promise<string> {
   try {
+    if (!routeInfo.waypoints || routeInfo.waypoints.length === 0) {
+      return "Unable to generate insights: route has no waypoints.";
+    }
+
+    const fromLat = routeInfo.waypoints[0]?.latitude;
+    const fromLon = routeInfo.waypoints[0]?.longitude;
+    const toLat = routeInfo.waypoints[routeInfo.waypoints.length - 1]?.latitude;
+    const toLon = routeInfo.waypoints[routeInfo.waypoints.length - 1]?.longitude;
+
+    if (fromLat === undefined || fromLon === undefined || toLat === undefined || toLon === undefined) {
+      return "Unable to generate insights: invalid waypoint coordinates.";
+    }
+
     const prompt = `You are a maritime insurance risk analyst. Analyze the following voyage risk assessment and provide a concise, professional explanation for underwriters.
 
 Route: ${routeInfo.name || 'Custom Route'}
-From: ${routeInfo.waypoints[0].latitude.toFixed(2)}°, ${routeInfo.waypoints[0].longitude.toFixed(2)}°
-To: ${routeInfo.waypoints[routeInfo.waypoints.length - 1].latitude.toFixed(2)}°, ${routeInfo.waypoints[routeInfo.waypoints.length - 1].longitude.toFixed(2)}°
+From: ${fromLat.toFixed(2)}°, ${fromLon.toFixed(2)}°
+To: ${toLat.toFixed(2)}°, ${toLon.toFixed(2)}°
 
 Risk Scores (0-100):
 - Overall Risk: ${riskScores.overall}%

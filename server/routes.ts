@@ -17,6 +17,38 @@ const riskCalculationSchema = z.object({
   })),
 });
 
+// Schema for AI insights request
+const aiInsightsSchema = z.object({
+  riskScores: z.object({
+    overall: z.number().min(0).max(100),
+    weather: z.number().min(0).max(100),
+    piracy: z.number().min(0).max(100),
+    traffic: z.number().min(0).max(100),
+    claims: z.number().min(0).max(100),
+  }),
+  routeInfo: z.object({
+    name: z.string().optional(),
+    waypoints: z.array(z.object({
+      latitude: z.number(),
+      longitude: z.number(),
+    })).min(1, "Route must have at least one waypoint"),
+  }),
+});
+
+// Schema for chat request
+const chatRequestSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant", "system"]),
+    content: z.string(),
+  })).min(1, "At least one message is required"),
+  context: z.object({
+    totalPolicies: z.number().optional(),
+    totalShipments: z.number().optional(),
+    totalClaims: z.number().optional(),
+    recentActivity: z.string().optional(),
+  }).optional(),
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Risk calculation endpoint (no auth needed)
   app.post('/api/calculate-risk', async (req, res) => {
@@ -33,16 +65,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Risk Insights endpoint
   app.post('/api/ai-insights', async (req, res) => {
     try {
-      const { riskScores, routeInfo } = req.body;
-      
-      if (!riskScores || !routeInfo) {
-        return res.status(400).json({ message: 'Risk scores and route info are required' });
-      }
-
+      const { riskScores, routeInfo } = aiInsightsSchema.parse(req.body);
       const insights = await generateRiskInsights(riskScores, routeInfo);
       res.json({ insights });
     } catch (error: any) {
       console.error("Error generating AI insights:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ message: 'Invalid request data', errors: error.errors });
+      }
       res.status(500).json({ message: error.message || "Failed to generate insights" });
     }
   });
@@ -50,11 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Chat endpoint with streaming
   app.post('/api/chat', async (req, res) => {
     try {
-      const { messages, context } = req.body;
-      
-      if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ message: 'Messages array is required' });
-      }
+      const { messages, context } = chatRequestSchema.parse(req.body);
 
       // Set headers for streaming
       res.setHeader('Content-Type', 'text/event-stream');
@@ -75,6 +101,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error in chat:", error);
       if (!res.headersSent) {
+        if (error.name === 'ZodError') {
+          return res.status(400).json({ message: 'Invalid request data', errors: error.errors });
+        }
         res.status(500).json({ message: error.message || "Failed to generate response" });
       }
     }
