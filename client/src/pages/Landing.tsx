@@ -24,7 +24,8 @@ import {
   Anchor,
   Navigation,
   Shield,
-  Rocket
+  Rocket,
+  Brain
 } from 'lucide-react';
 import type { Claim, ShipmentCertificate } from '@shared/schema';
 import maritimeMapImg from '@assets/stock_images/maritime_shipping_ro_844ed7b2.jpg';
@@ -168,6 +169,8 @@ export default function Landing() {
   const [selectedRoute, setSelectedRoute] = useState<string>('');
   const [calculatedRisk, setCalculatedRisk] = useState<RiskScore | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  const [isInsightsLoading, setIsInsightsLoading] = useState(false);
   const [activityPage, setActivityPage] = useState(0);
   const [activeSection, setActiveSection] = useState<string>('');
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -215,6 +218,7 @@ export default function Landing() {
     if (!route) return;
 
     setIsCalculating(true);
+    setAiInsights(null);
     try {
       const response = await fetch('/api/calculate-risk', {
         method: 'POST',
@@ -233,6 +237,37 @@ export default function Landing() {
         traffic: scores.traffic,
         claims: scores.claims,
       });
+
+      // Generate AI insights
+      setIsInsightsLoading(true);
+      try {
+        const insightsResponse = await fetch('/api/ai-insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            riskScores: scores,
+            routeInfo: {
+              name: route.name,
+              waypoints: route.waypoints.map(wp => ({
+                latitude: wp.latitude,
+                longitude: wp.longitude,
+              })),
+            },
+          }),
+        });
+
+        if (insightsResponse.ok) {
+          const { insights } = await insightsResponse.json();
+          setAiInsights(insights);
+        } else {
+          setAiInsights('AI insights temporarily unavailable.');
+        }
+      } catch (insightsError) {
+        console.error('Failed to generate AI insights:', insightsError);
+        setAiInsights('AI insights temporarily unavailable.');
+      } finally {
+        setIsInsightsLoading(false);
+      }
     } catch (error) {
       console.error('Error calculating risk:', error);
     } finally {
@@ -773,6 +808,31 @@ export default function Landing() {
                         </div>
                       </div>
                     </div>
+
+                    {/* AI Insights */}
+                    <Card className="border-primary/20" data-testid="card-ai-insights">
+                      <div className="p-4">
+                        <div className="flex items-start gap-2 mb-3">
+                          <Brain className="w-4 h-4 text-primary mt-0.5" />
+                          <h4 className="text-sm font-medium">AI Route Insights</h4>
+                        </div>
+                        {isInsightsLoading ? (
+                          <div className="space-y-2" data-testid="skeleton-ai-insights">
+                            <div className="h-3 bg-muted rounded animate-pulse"></div>
+                            <div className="h-3 bg-muted rounded animate-pulse w-5/6"></div>
+                            <div className="h-3 bg-muted rounded animate-pulse w-4/6"></div>
+                          </div>
+                        ) : aiInsights ? (
+                          <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-ai-insights">
+                            {aiInsights}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic" data-testid="text-ai-insights-unavailable">
+                            AI insights unavailable
+                          </p>
+                        )}
+                      </div>
+                    </Card>
 
                     <Button className="w-full" asChild data-testid="button-create-custom-route">
                       <a href="/dashboard">Create Custom Route Analysis</a>

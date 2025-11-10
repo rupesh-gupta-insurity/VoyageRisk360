@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Cloud, Skull, Ship as ShipIcon, FileText, AlertTriangle, Route } from 'lucide-react';
+import { Cloud, Skull, Ship as ShipIcon, FileText, AlertTriangle, Route, Brain } from 'lucide-react';
 import { calculateRouteDistance, formatNauticalMiles } from '@/lib/distanceUtils';
 
 interface SaveRouteDialogProps {
@@ -26,6 +26,8 @@ interface SaveRouteDialogProps {
     traffic: number;
     claims: number;
   } | null;
+  aiInsights?: string | null;
+  isInsightsLoading?: boolean;
   isCalculating?: boolean;
 }
 
@@ -35,6 +37,8 @@ export default function SaveRouteDialog({
   onSave, 
   waypoints = [],
   riskScores,
+  aiInsights,
+  isInsightsLoading = false,
   isCalculating = false 
 }: SaveRouteDialogProps) {
   const [routeName, setRouteName] = useState('');
@@ -155,6 +159,31 @@ export default function SaveRouteDialog({
                         </p>
                       </div>
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* AI Insights */}
+              <Card data-testid="card-ai-insights">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-2 mb-3">
+                    <Brain className="w-4 h-4 text-primary mt-0.5" />
+                    <h4 className="text-sm font-medium">AI Route Insights</h4>
+                  </div>
+                  {isInsightsLoading ? (
+                    <div className="space-y-2" data-testid="skeleton-ai-insights">
+                      <div className="h-3 bg-muted rounded animate-pulse"></div>
+                      <div className="h-3 bg-muted rounded animate-pulse w-5/6"></div>
+                      <div className="h-3 bg-muted rounded animate-pulse w-4/6"></div>
+                    </div>
+                  ) : aiInsights ? (
+                    <p className="text-sm text-muted-foreground leading-relaxed" data-testid="text-ai-insights">
+                      {aiInsights}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic" data-testid="text-ai-insights-unavailable">
+                      AI insights unavailable
+                    </p>
                   )}
                 </CardContent>
               </Card>

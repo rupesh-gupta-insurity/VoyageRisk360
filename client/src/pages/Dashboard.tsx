@@ -43,6 +43,8 @@ export default function Dashboard() {
     traffic: number;
     claims: number;
   } | null>(null);
+  const [aiInsights, setAiInsights] = useState<string | null>(null);
+  const [isInsightsLoading, setIsInsightsLoading] = useState(false);
   const [alertConfig, setAlertConfig] = useState({ enabled: true, threshold: 75 });
   const [isSaving, setIsSaving] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -76,6 +78,7 @@ export default function Dashboard() {
       setTempWaypoints(waypoints);
       setShowSaveDialog(true);
       setIsSaving(true);
+      setAiInsights(null);
       
       try {
         // Calculate risk scores immediately
@@ -97,6 +100,37 @@ export default function Dashboard() {
 
         const riskScores = await response.json();
         setPreviewRiskScores(riskScores);
+
+        // Generate AI insights
+        setIsInsightsLoading(true);
+        try {
+          const insightsResponse = await fetch('/api/ai-insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              riskScores,
+              routeInfo: {
+                name: 'Custom Route',
+                waypoints: waypoints.map(wp => ({
+                  latitude: wp.lat,
+                  longitude: wp.lng,
+                })),
+              },
+            }),
+          });
+
+          if (insightsResponse.ok) {
+            const { insights } = await insightsResponse.json();
+            setAiInsights(insights);
+          } else {
+            setAiInsights('AI insights temporarily unavailable.');
+          }
+        } catch (insightsError) {
+          console.error('Failed to generate AI insights:', insightsError);
+          setAiInsights('AI insights temporarily unavailable.');
+        } finally {
+          setIsInsightsLoading(false);
+        }
       } catch (error) {
         toast({
           title: 'Error',
@@ -389,11 +423,15 @@ export default function Dashboard() {
           setShowSaveDialog(open);
           if (!open) {
             setPreviewRiskScores(null);
+            setAiInsights(null);
+            setIsInsightsLoading(false);
           }
         }}
         onSave={handleSaveRoute}
         waypoints={tempWaypoints}
         riskScores={previewRiskScores}
+        aiInsights={aiInsights}
+        isInsightsLoading={isInsightsLoading}
         isCalculating={isSaving && !previewRiskScores}
       />
 
