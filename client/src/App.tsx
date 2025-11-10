@@ -8,6 +8,7 @@ import Policies from "@/pages/Policies";
 import Shipments from "@/pages/Shipments";
 import Claims from "@/pages/Claims";
 import Landing from "@/pages/Landing";
+import ChatWidget from "@/components/ChatWidget";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +30,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <ChatWidget />
       </TooltipProvider>
     </QueryClientProvider>
   );
