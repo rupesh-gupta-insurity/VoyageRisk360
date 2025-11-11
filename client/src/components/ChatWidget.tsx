@@ -136,7 +136,7 @@ export default function ChatWidget() {
       {!isOpen && (
         <Button
           size="lg"
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl z-50"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl z-[100]"
           onClick={() => setIsOpen(true)}
           data-testid="button-open-chat"
         >
@@ -146,7 +146,7 @@ export default function ChatWidget() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <Card className="fixed bottom-6 right-6 w-96 h-[32rem] flex flex-col shadow-2xl z-50">
+        <Card className="fixed bottom-6 right-6 w-96 h-[32rem] flex flex-col shadow-2xl z-[100]">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2">
