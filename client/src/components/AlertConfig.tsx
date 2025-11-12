@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Bell } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface AlertConfigProps {
   threshold: number;
@@ -22,6 +22,10 @@ export default function AlertConfig({
   onSave,
 }: AlertConfigProps) {
   const [localThreshold, setLocalThreshold] = useState(threshold.toString());
+
+  useEffect(() => {
+    setLocalThreshold(threshold.toString());
+  }, [threshold]);
 
   const handleSave = () => {
     const value = parseInt(localThreshold);
