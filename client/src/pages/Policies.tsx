@@ -80,20 +80,22 @@ export default function Policies() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       <PageHeader activePage="policies" />
 
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">Marine Insurance Policies</h1>
-          <p className="text-muted-foreground">
-            View and manage {data?.pagination.total || 0} maritime insurance policies
-          </p>
-        </div>
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Header Section - Fixed */}
+        <div className="px-4 py-6 border-b">
+          <div className="container mx-auto">
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold mb-2">Marine Insurance Policies</h1>
+              <p className="text-muted-foreground">
+                View and manage {data?.pagination.total || 0} maritime insurance policies
+              </p>
+            </div>
 
-        {/* Filters */}
-        <Card className="p-4 mb-6">
+            {/* Filters */}
+            <Card className="p-4">
           <div className="flex items-center gap-2 mb-4">
             <Filter className="w-4 h-4" />
             <h3 className="text-sm font-semibold">Filters</h3>
@@ -185,21 +187,24 @@ export default function Policies() {
               Clear Filters
             </Button>
           </div>
-        </Card>
+            </Card>
+          </div>
+        </div>
 
-        {/* Policies Table */}
-        <Card>
-          {isLoading ? (
-            <div className="p-12 text-center text-muted-foreground">
-              Loading policies...
-            </div>
-          ) : !data || data.data.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              No policies found
-            </div>
-          ) : (
-            <>
-              <Table>
+        {/* Table Section - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-4">
+          <div className="container mx-auto py-4">
+            <Card>
+              {isLoading ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  Loading policies...
+                </div>
+              ) : !data || data.data.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  No policies found
+                </div>
+              ) : (
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Policy No</TableHead>
@@ -241,9 +246,16 @@ export default function Policies() {
                   ))}
                 </TableBody>
               </Table>
-              
-              {/* Pagination */}
-              <div className="flex items-center justify-between border-t p-4">
+              )}
+            </Card>
+          </div>
+        </div>
+
+        {/* Pagination Footer - Fixed */}
+        {data && data.data.length > 0 && (
+          <div className="border-t bg-card">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between py-4">
                 <div className="text-sm text-muted-foreground">
                   Showing {(page - 1) * 10 + 1} to {Math.min(page * 10, data.pagination.total)} of {data.pagination.total} policies
                 </div>
@@ -268,10 +280,10 @@ export default function Policies() {
                   </Button>
                 </div>
               </div>
-            </>
-          )}
-        </Card>
-      </main>
+            </div>
+          </div>
+        )}
+      </div>
 
       <PolicyDetailModal
         policy={selectedPolicy}

@@ -122,25 +122,28 @@ export default function Shipments() {
     : [];
 
   return (
-    <div className="min-h-screen bg-background">
-      <PageHeader activePage="shipments" sticky />
+    <div className="flex h-screen flex-col overflow-hidden">
+      <PageHeader activePage="shipments" />
 
-      <main className="container mx-auto px-4 py-8 space-y-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Package className="w-8 h-8 text-primary" />
-              Shipment Certificates
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Recently booked shipments across all policies
-            </p>
-          </div>
-        </div>
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Header Section - Fixed */}
+        <div className="px-4 py-6 border-b space-y-6">
+          <div className="container mx-auto">
+            {/* Page Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold flex items-center gap-3">
+                  <Package className="w-8 h-8 text-primary" />
+                  Shipment Certificates
+                </h1>
+                <p className="text-muted-foreground mt-2">
+                  Recently booked shipments across all policies
+                </p>
+              </div>
+            </div>
 
-        {/* Search Bar */}
-        <div className="flex items-center gap-4">
+            {/* Search Bar */}
+            <div className="flex items-center gap-4 mt-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -167,12 +170,12 @@ export default function Shipments() {
               </Badge>
             )}
           </Button>
-        </div>
+            </div>
 
-        {/* Advanced Filters */}
-        <Collapsible open={showFilters} onOpenChange={setShowFilters}>
-          <CollapsibleContent>
-            <Card className="p-6 space-y-4">
+            {/* Advanced Filters */}
+            <Collapsible open={showFilters} onOpenChange={setShowFilters}>
+              <CollapsibleContent>
+                <Card className="p-6 space-y-4 mt-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold flex items-center gap-2">
                   <Filter className="w-4 h-4" />
@@ -317,23 +320,26 @@ export default function Shipments() {
                   />
                 </div>
               </div>
-            </Card>
-          </CollapsibleContent>
-        </Collapsible>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </div>
 
-        {/* Shipments Table */}
-        <Card>
-          {isLoading ? (
-            <div className="p-12 text-center text-muted-foreground">
-              Loading shipments...
-            </div>
-          ) : !data || data.data.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              No shipments found
-            </div>
-          ) : (
-            <>
-              <Table>
+        {/* Table Section - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-4">
+          <div className="container mx-auto py-4">
+            <Card>
+              {isLoading ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  Loading shipments...
+                </div>
+              ) : !data || data.data.length === 0 ? (
+                <div className="p-12 text-center text-muted-foreground">
+                  No shipments found
+                </div>
+              ) : (
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Certificate</TableHead>
@@ -416,9 +422,16 @@ export default function Shipments() {
                   ))}
                 </TableBody>
               </Table>
+              )}
+            </Card>
+          </div>
+        </div>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between border-t p-4">
+        {/* Pagination Footer - Fixed */}
+        {data && data.data.length > 0 && (
+          <div className="border-t bg-card">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between py-4">
                 <div className="text-sm text-muted-foreground">
                   Showing {(page - 1) * 50 + 1} to {Math.min(page * 50, data.pagination.total)} of {data.pagination.total} shipments
                 </div>
@@ -443,10 +456,10 @@ export default function Shipments() {
                   </Button>
                 </div>
               </div>
-            </>
-          )}
-        </Card>
-      </main>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

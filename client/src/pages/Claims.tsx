@@ -152,21 +152,22 @@ export default function Claims() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-screen flex-col overflow-hidden">
       <PageHeader activePage="claims" />
 
-      <main className="container mx-auto px-4 py-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Header Section - Fixed */}
+        <div className="px-4 py-6 border-b">
+          <div className="container mx-auto">
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
+                <h1 className="text-3xl font-bold flex items-center gap-2">
+                  <FileText className="w-6 h-6" />
                   Claims Management
-                </CardTitle>
-                <CardDescription>
+                </h1>
+                <p className="text-muted-foreground mt-2">
                   View and manage all maritime insurance claims
-                </CardDescription>
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -198,12 +199,11 @@ export default function Claims() {
                 </Button>
               </div>
             </div>
-          </CardHeader>
 
-          <Collapsible open={showFilters}>
-            <CollapsibleContent>
-              <div className="px-6 pb-4">
-                <Card className="bg-muted/50">
+            {/* Advanced Filters */}
+            <Collapsible open={showFilters}>
+              <CollapsibleContent>
+                <Card className="bg-muted/50 mt-4">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">Advanced Filters</CardTitle>
@@ -347,32 +347,35 @@ export default function Claims() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+        </div>
 
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">Loading claims...</p>
-              </div>
-            ) : !data?.data || data.data.length === 0 ? (
-              <div className="text-center py-12">
-                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No claims found</p>
-                {activeFilterCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    onClick={clearFilters}
-                    className="mt-2"
-                    data-testid="button-clear-filters-empty"
-                  >
-                    Clear filters
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <>
+        {/* Table Section - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-4">
+          <div className="container mx-auto py-4">
+            <Card>
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Loading claims...</p>
+                </div>
+              ) : !data?.data || data.data.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No claims found</p>
+                  {activeFilterCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      onClick={clearFilters}
+                      className="mt-2"
+                      data-testid="button-clear-filters-empty"
+                    >
+                      Clear filters
+                    </Button>
+                  )}
+                </div>
+              ) : (
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
@@ -447,43 +450,48 @@ export default function Claims() {
                     </TableBody>
                   </Table>
                 </div>
+              )}
+            </Card>
+          </div>
+        </div>
 
-                {data.pagination && data.pagination.totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4">
-                    <p className="text-sm text-muted-foreground" data-testid="text-pagination-info">
-                      Showing {((data.pagination.page - 1) * data.pagination.limit) + 1} to{' '}
-                      {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} of{' '}
-                      {data.pagination.total} claims
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                        data-testid="button-prev-page"
-                      >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        Previous
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(p => Math.min(data.pagination.totalPages, p + 1))}
-                        disabled={page >= data.pagination.totalPages}
-                        data-testid="button-next-page"
-                      >
-                        Next
-                        <ChevronRight className="w-4 h-4 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </main>
+        {/* Pagination Footer - Fixed */}
+        {data && data.data.length > 0 && data.pagination && data.pagination.totalPages > 1 && (
+          <div className="border-t bg-card">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-between py-4">
+                <p className="text-sm text-muted-foreground" data-testid="text-pagination-info">
+                  Showing {((data.pagination.page - 1) * data.pagination.limit) + 1} to{' '}
+                  {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} of{' '}
+                  {data.pagination.total} claims
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    data-testid="button-prev-page"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(data.pagination.totalPages, p + 1))}
+                    disabled={page >= data.pagination.totalPages}
+                    data-testid="button-next-page"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
