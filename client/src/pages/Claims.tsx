@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { FileText, Filter, X, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -152,42 +153,7 @@ export default function Claims() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/">
-              <a className="text-xl font-bold text-primary hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-home">
-                VoyageRisk360
-              </a>
-            </Link>
-            <nav className="flex gap-4">
-              <Link href="/dashboard">
-                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-dashboard">
-                  Routes
-                </a>
-              </Link>
-              <Link href="/policies">
-                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-policies">
-                  Policies
-                </a>
-              </Link>
-              <Link href="/shipments">
-                <a className="text-sm text-muted-foreground hover:text-foreground transition-colors hover-elevate active-elevate-2 px-3 py-2 rounded-md" data-testid="link-shipments">
-                  Shipments
-                </a>
-              </Link>
-              <Link href="/claims">
-                <a className="text-sm font-medium text-foreground hover-elevate active-elevate-2 px-3 py-2 rounded-md border-b-2 border-primary" data-testid="link-claims">
-                  Claims
-                </a>
-              </Link>
-            </nav>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            Demo Mode
-          </Badge>
-        </div>
-      </header>
+      <PageHeader activePage="claims" />
 
       <main className="container mx-auto px-4 py-6">
         <Card>

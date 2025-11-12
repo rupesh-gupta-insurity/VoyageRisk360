@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { Ship, Package, Search, Filter, Calendar, MapPin, DollarSign, FileText, X } from 'lucide-react';
-import ThemeToggle from '@/components/ThemeToggle';
+import PageHeader from '@/components/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -123,47 +123,7 @@ export default function Shipments() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/">
-              <div className="flex items-center gap-2 cursor-pointer hover-elevate px-3 py-2 rounded-md">
-                <Ship className="w-6 h-6 text-primary" />
-                <span className="font-bold text-xl">VoyageRisk360</span>
-              </div>
-            </Link>
-            <nav className="flex items-center gap-2">
-              <Link href="/dashboard">
-                <Button variant="ghost" data-testid="link-dashboard">
-                  Dashboard
-                </Button>
-              </Link>
-              <Link href="/policies">
-                <Button variant="ghost" data-testid="link-policies">
-                  Policies
-                </Button>
-              </Link>
-              <Link href="/shipments">
-                <Button variant="default" data-testid="link-shipments">
-                  Shipments
-                </Button>
-              </Link>
-              <Link href="/claims">
-                <Button variant="ghost" data-testid="link-claims">
-                  Claims
-                </Button>
-              </Link>
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400">
-              Demo Mode
-            </Badge>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <PageHeader activePage="shipments" sticky />
 
       <main className="container mx-auto px-4 py-8 space-y-6">
         {/* Page Header */}

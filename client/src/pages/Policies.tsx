@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'wouter';
-import { Ship, FileText, Search, Filter } from 'lucide-react';
-import ThemeToggle from '@/components/ThemeToggle';
+import { Search, Filter } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 import PolicyDetailModal from '@/components/PolicyDetailModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -82,47 +81,7 @@ export default function Policies() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link href="/">
-              <div className="flex items-center gap-2 cursor-pointer hover-elevate active-elevate-2 px-3 py-2 rounded-md">
-                <Ship className="w-6 h-6 text-primary" />
-                <span className="text-xl font-bold">VoyageRisk360</span>
-              </div>
-            </Link>
-            
-            <nav className="flex items-center gap-4">
-              <Link href="/dashboard">
-                <Button variant="ghost" data-testid="link-routes">
-                  Routes
-                </Button>
-              </Link>
-              <Link href="/policies">
-                <Button variant="default" data-testid="link-policies">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Policies
-                </Button>
-              </Link>
-              <Link href="/shipments">
-                <Button variant="ghost" data-testid="link-shipments">
-                  <Ship className="w-4 h-4 mr-2" />
-                  Shipments
-                </Button>
-              </Link>
-              <Link href="/claims">
-                <Button variant="ghost" data-testid="link-claims">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Claims
-                </Button>
-              </Link>
-            </nav>
-          </div>
-          
-          <ThemeToggle />
-        </div>
-      </header>
+      <PageHeader activePage="policies" />
 
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-8">

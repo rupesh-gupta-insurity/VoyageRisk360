@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'wouter';
 import MapView, { type MapViewRef } from '@/components/MapView';
 import RiskScoreCard from '@/components/RiskScoreCard';
 import RiskTrendChart from '@/components/RiskTrendChart';
@@ -12,9 +11,8 @@ import RiskLegend from '@/components/RiskLegend';
 import SaveRouteDialog from '@/components/SaveRouteDialog';
 import OnboardingOverlay from '@/components/OnboardingOverlay';
 import AddressLookup from '@/components/AddressLookup';
-import ThemeToggle from '@/components/ThemeToggle';
-import { Button } from '@/components/ui/button';
-import { Ship, MapPin, FileText } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
+import { MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAllRoutes, saveRoute, deleteRoute as deleteRouteLS, getAlertConfig, saveAlertConfig, type StoredRoute } from '@/lib/localStorage';
 import jsPDF from 'jspdf';
@@ -281,46 +279,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="flex h-16 items-center justify-between border-b px-6">
-        <div className="flex items-center gap-6">
-          <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer hover-elevate active-elevate-2 px-3 py-2 rounded-md">
-              <Ship className="h-6 w-6 text-primary" />
-              <h1 className="text-xl font-bold">VoyageRisk360</h1>
-            </div>
-          </Link>
-          
-          <nav className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="default" size="sm" data-testid="link-routes">
-                Routes
-              </Button>
-            </Link>
-            <Link href="/policies">
-              <Button variant="ghost" size="sm" data-testid="link-policies">
-                <FileText className="w-4 h-4 mr-2" />
-                Policies
-              </Button>
-            </Link>
-            <Link href="/shipments">
-              <Button variant="ghost" size="sm" data-testid="link-shipments">
-                <Ship className="w-4 h-4 mr-2" />
-                Shipments
-              </Button>
-            </Link>
-            <Link href="/claims">
-              <Button variant="ghost" size="sm" data-testid="link-claims">
-                <FileText className="w-4 h-4 mr-2" />
-                Claims
-              </Button>
-            </Link>
-          </nav>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm bg-primary/10 border border-primary px-3 py-1 rounded-md text-primary font-medium">Demo Mode</span>
-          <ThemeToggle />
-        </div>
-      </header>
+      <PageHeader activePage="dashboard" />
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-80 border-r bg-card p-4 space-y-4 overflow-y-auto">
