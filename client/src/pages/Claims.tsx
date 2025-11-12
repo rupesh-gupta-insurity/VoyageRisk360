@@ -108,7 +108,7 @@ export default function Claims() {
     queryFn: async () => {
       const queryParams = new URLSearchParams({
         page: page.toString(),
-        limit: '50',
+        limit: '25',
         ...(filters.search && { search: filters.search }),
         ...(filters.status && { status: filters.status }),
         ...(filters.lossType && { lossType: filters.lossType }),

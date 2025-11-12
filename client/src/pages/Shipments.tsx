@@ -51,7 +51,7 @@ export default function Shipments() {
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '50',
+        limit: '25',
         ...Object.fromEntries(
           Object.entries(filters).filter(([, v]) => v !== '' && v !== 'all')
         ),
@@ -433,7 +433,7 @@ export default function Shipments() {
             <div className="container mx-auto px-4">
               <div className="flex items-center justify-between py-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {(page - 1) * 50 + 1} to {Math.min(page * 50, data.pagination.total)} of {data.pagination.total} shipments
+                  Showing {(page - 1) * 25 + 1} to {Math.min(page * 25, data.pagination.total)} of {data.pagination.total} shipments
                 </div>
                 <div className="flex gap-2">
                   <Button

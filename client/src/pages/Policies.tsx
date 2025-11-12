@@ -38,7 +38,7 @@ export default function Policies() {
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '10',
+        limit: '25',
         ...Object.fromEntries(
           Object.entries(filters).filter(([, v]) => v !== '' && v !== 'all')
         ),
@@ -257,7 +257,7 @@ export default function Policies() {
             <div className="container mx-auto px-4">
               <div className="flex items-center justify-between py-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {(page - 1) * 10 + 1} to {Math.min(page * 10, data.pagination.total)} of {data.pagination.total} policies
+                  Showing {(page - 1) * 25 + 1} to {Math.min(page * 25, data.pagination.total)} of {data.pagination.total} policies
                 </div>
                 <div className="flex gap-2">
                   <Button
